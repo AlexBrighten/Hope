@@ -50,8 +50,8 @@ class Config:
     # SMTP Settings (Standard instant email alternative to Google OAuth)
     smtp_host: str = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
     smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
-    smtp_email: str = os.getenv("SMTP_EMAIL", "").strip()
-    smtp_password: str = os.getenv("SMTP_PASSWORD", "").strip()
+    smtp_email: str = os.getenv("SMTP_EMAIL", os.getenv("GMAIL_ADDRESS", "")).strip()
+    smtp_password: str = os.getenv("SMTP_PASSWORD", os.getenv("GMAIL_APP_PASSWORD", "")).strip()
     allow_cloud_fallback: bool = os.getenv("ALLOW_CLOUD_FALLBACK", "false").lower() in ("true", "1", "yes")
 
     # Security & Safeguards

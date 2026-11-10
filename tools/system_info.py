@@ -5,9 +5,7 @@ Monitors CPU, RAM, battery, disk space, and top memory-hogging processes directl
 import os
 import sys
 import time
-import shutil
 import logging
-import tempfile
 from pathlib import Path
 from typing import Dict, Any, List
 import psutil
@@ -122,27 +120,24 @@ def format_pc_report() -> str:
 
 
 def clean_temp_files() -> str:
-    """Clean safe temporary files from the system temp directory to free disk space."""
-    temp_dir = Path(tempfile.gettempdir())
+    """Clean Hope-owned temporary files without touching unrelated system files."""
+    temp_dir = config.database_path.parent
     freed_bytes = 0
     deleted_files = 0
 
     if not temp_dir.exists():
-        return "Temp directory not accessible."
+        return "Hope workspace is not accessible."
 
     for item in temp_dir.iterdir():
         try:
-            if item.is_file():
+            if item.is_file() and item.name.startswith(("voice_", "hope_tmp_")):
                 size = item.stat().st_size
                 item.unlink(missing_ok=True)
                 freed_bytes += size
                 deleted_files += 1
-            elif item.is_dir():
-                shutil.rmtree(item, ignore_errors=True)
         except Exception:
-            # Files in active use cannot be deleted, ignore safely
+            # Files in active use cannot be deleted; continue with other owned files.
             continue
 
     freed_mb = round(freed_bytes / (1024 ** 2), 2)
-    return f"🧹 **Temp Cleanup Finished**:\nReclaimed `{freed_mb} MB` across {deleted_files} temporary files."
-
+    return f"🧹 **Hope Temp Cleanup Finished**:\nReclaimed `{freed_mb} MB` across {deleted_files} temporary files."
