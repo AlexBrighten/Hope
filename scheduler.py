@@ -10,9 +10,11 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from config import config
 from database import db
+from brain.persona import EDIT_PERSONA
 from brain.local_brain import local_brain
 from tools.calendar import cal_list
 from tools.gmail import mail_search
+from tools.web import deep_research
 from tools.memory import remember
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ class HopeScheduler:
 
             # 2. Local distillation
             prompt = (
-                f"You are Hope, an autonomous personal executive agent. "
+                f"You are E.D.I.T.H., preparing a concise executive briefing. "
                 f"Create a concise, motivating executive morning briefing for the owner today ({datetime.now().strftime('%A, %B %d')}).\n\n"
                 f"Schedule:\n{cal_summary}\n\n"
                 f"Unread Emails:\n{inbox_summary}\n\n"
@@ -56,13 +58,13 @@ class HopeScheduler:
 
             res = await local_brain.chat(
                 messages=[{"role": "user", "content": prompt}],
-                system_prompt="You are Hope, an ultra-efficient executive assistant."
+                system_prompt=EDIT_PERSONA
             )
             briefing_text = res.get("content", "")
             if not briefing_text:
                 briefing_text = f"☀️ **Good Morning! Here is your agenda:**\n\n{cal_summary}\n\n{inbox_summary}"
 
-            await self.send_telegram_alert(f"☀️ **Executive Morning Briefing**\n\n{briefing_text}")
+            await self.send_telegram_alert(f"☀️ **E.D.I.T.H. Executive Briefing**\n\n{briefing_text}")
         except Exception as e:
             logger.error(f"Morning briefing failed: {e}")
 
@@ -84,6 +86,15 @@ class HopeScheduler:
             logger.info("Exported memories to workspace/memory.md successfully.")
         except Exception as e:
             logger.error(f"Nightly memory distillation failed: {e}")
+
+    async def autonomous_research_job(self):
+        """Run configured research watches and deliver findings while the user is away."""
+        for query in config.autonomous_research_queries:
+            try:
+                findings = await deep_research(query)
+                await self.send_telegram_alert(f"🔎 **E.D.I.T.H. Research Watch**\n\n{findings[:3800]}")
+            except Exception as e:
+                logger.error("Autonomous research failed for %r: %s", query, e)
 
     def start(self):
         """Register jobs and start scheduler."""
@@ -110,6 +121,14 @@ class HopeScheduler:
             id="nightly_distill",
             replace_existing=True
         )
+        if config.autonomous_research_queries:
+            self.scheduler.add_job(
+                self.autonomous_research_job,
+                "interval",
+                hours=max(1, config.autonomous_research_interval_hours),
+                id="autonomous_research",
+                replace_existing=True
+            )
 
         self.scheduler.start()
         logger.info("Hope Scheduler started (Morning briefing, inbox triage, memory distill registered).")
@@ -120,4 +139,3 @@ class HopeScheduler:
 
 
 scheduler = HopeScheduler()
-

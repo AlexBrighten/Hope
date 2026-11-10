@@ -20,8 +20,8 @@ class RouteDecision:
 
 # Private keywords (Strictly Tier 1 only)
 PRIVATE_PATTERNS = [
-    r"\b(email|emails|gmail|inbox|unread|draft|drafts|send\s+email|reply\s+email)\b",
-    r"\b(calendar|schedule|meeting|meetings|appointment|events?|reschedule)\b",
+    r"\b(email|emails|gmail|mail|inbox|unread|draft|drafts|send\s+email|reply\s+email)\b",
+    r"\b(calendar|schedule|reminder|remind|meeting|meetings|appointment|events?|reschedule)\b",
     r"\b(remember\s+that|my\s+preference|my\s+favorite|my\s+phone|my\s+address|my\s+password|who\s+am\s+i)\b",
     r"\b(workspace[/\\]|my\s+notes|personal\s+note|my\s+secret)\b"
 ]
@@ -62,13 +62,21 @@ class Router:
             cleaned = query[5:].strip()
             return RouteDecision(tier=2, is_private=False, reason="manual_override_deep", tool_category="research", reasoning_effort="high", cleaned_query=cleaned)
 
+        if query.startswith("/research"):
+            cleaned = query[9:].strip()
+            return RouteDecision(tier=2, is_private=False, reason="manual_override_research", tool_category="research", reasoning_effort="high", cleaned_query=cleaned)
+
+        if query.startswith("/jobs"):
+            cleaned = query[5:].strip()
+            return RouteDecision(tier=2, is_private=False, reason="manual_override_jobs", tool_category="research", reasoning_effort="low", cleaned_query=f"Find job and business leads for {cleaned}")
+
         # 2. Strict Privacy Gate: Mail & Calendar & Personal Notes
         if self._private_regex.search(query):
             # Identify category
             q_lower = query.lower()
             if any(k in q_lower for k in ["email", "gmail", "inbox", "draft", "mail"]):
                 cat = "mail"
-            elif any(k in q_lower for k in ["calendar", "schedule", "meeting", "event", "appointment"]):
+            elif any(k in q_lower for k in ["calendar", "schedule", "reminder", "remind", "meeting", "event", "appointment"]):
                 cat = "calendar"
             elif any(k in q_lower for k in ["remember", "memory", "recall", "note"]):
                 cat = "memory"
@@ -107,4 +115,3 @@ class Router:
 
 
 router = Router()
-

@@ -38,7 +38,7 @@ class Config:
 
     # Tier 3: Gemini Fallback
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "").strip()
-    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     daily_gemini_limit: int = int(os.getenv("DAILY_GEMINI_LIMIT", "50"))
 
     # Integrations
@@ -52,6 +52,10 @@ class Config:
     approval_expiry_minutes: int = int(os.getenv("APPROVAL_EXPIRY_MINUTES", "30"))
     response_cache_hours: int = int(os.getenv("RESPONSE_CACHE_HOURS", "4"))
     timezone: str = os.getenv("TIMEZONE", "UTC")
+    autonomous_research_queries: tuple[str, ...] = tuple(
+        query.strip() for query in os.getenv("AUTONOMOUS_RESEARCH_QUERIES", "").split("|") if query.strip()
+    )
+    autonomous_research_interval_hours: int = int(os.getenv("AUTONOMOUS_RESEARCH_INTERVAL_HOURS", "6"))
 
     def is_telegram_ready(self) -> bool:
         return bool(self.telegram_bot_token and self.allowed_user_id)
@@ -68,4 +72,3 @@ class Config:
 
 # Global singleton instance
 config = Config()
-

@@ -26,7 +26,9 @@ class TestRouter(unittest.TestCase):
         """Private personal data must always map to Tier 1 with is_private=True."""
         private_queries = [
             ("Check my unread emails", "mail"),
+            ("Mail Alice that the meeting moved", "mail"),
             ("What is my schedule today?", "calendar"),
+            ("Remind me tomorrow at 9am", "calendar"),
             ("Please reschedule my meeting at 3pm", "calendar"),
             ("Remember that my favorite coffee is espresso", "memory"),
             ("Search my inbox for receipt", "mail")
@@ -57,6 +59,8 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(router.route("/local what is the weather").tier, 1)
         self.assertEqual(router.route("/free check research paper").tier, 2)
         self.assertEqual(router.route("/gemini transcribe audio").tier, 3)
+        self.assertEqual(router.route("/research quantum computing").tool_category, "research")
+        self.assertEqual(router.route("/jobs Python developer").tool_category, "research")
         
         deep = router.route("/deep analyze market economics")
         self.assertEqual(deep.tier, 2)
@@ -66,4 +70,3 @@ class TestRouter(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

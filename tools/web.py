@@ -3,6 +3,7 @@ DuckDuckGo search + httpx + trafilatura for clean text extraction (~20MB RAM, su
 """
 
 import logging
+import re
 from typing import List, Dict, Any
 import httpx
 
@@ -99,3 +100,26 @@ async def company_brief(query: str) -> str:
         f"{search_res}\n\n"
         f"_Source: Live DuckDuckGo Search_"
     )
+
+
+async def deep_research(query: str, max_sources: int = 3) -> str:
+    """Search the web, open the strongest results, and synthesize source material."""
+    search_res = await web_search(query, max_results=max_sources + 2)
+    urls = list(dict.fromkeys(re.findall(r"https?://[^\s)>]+", search_res)))[:max_sources]
+    if not urls:
+        return f"### Deep Research: {query}\n\n{search_res}"
+
+    source_text = []
+    for url in urls:
+        source_text.append(await fetch_page(url, max_chars=3500))
+    return (
+        f"### Deep Research: {query}\n\n"
+        f"Initial search results:\n{search_res}\n\n"
+        f"Opened sources:\n\n" + "\n\n---\n\n".join(source_text)
+    )
+
+
+async def find_job_leads(role: str, location: str = "remote", max_sources: int = 5) -> str:
+    """Find current public job or business-lead opportunities for a role."""
+    query = f"{role} jobs leads {location} hiring opportunities"
+    return await deep_research(query, max_sources=max_sources)

@@ -60,7 +60,7 @@ async def run_diagnostics():
         print("     (Get a free key at https://openrouter.ai/keys)")
 
     # 5. Tier 3: Gemini Fallback Check
-    print("\n[5/5] Checking Tier 3 (Google Gemini 2.5 Flash)...")
+    print("\n[5/5] Checking Tier 3 (Google Gemini)...")
     if gemini_brain.is_configured():
         print(f"  ✅ Gemini API Key configured.")
         print(f"  • Model: {config.gemini_model}")
@@ -86,4 +86,3 @@ async def run_diagnostics():
 
 if __name__ == "__main__":
     asyncio.run(run_diagnostics())
-

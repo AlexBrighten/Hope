@@ -1,4 +1,4 @@
-# 🌟 Hope UltraLight — Autonomous Personal Executive AI Agent
+# 🌟 E.D.I.T.H. — Hope UltraLight Personal Executive AI Agent
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -8,7 +8,7 @@
 [![Privacy First](https://img.shields.io/badge/Privacy-Hard_Local_Partition-success?style=flat)](#️-privacy-boundaries--human-in-the-loop-safeguards)
 [![Zero Cloud Cost](https://img.shields.io/badge/Cloud_Cost-$0.00_Free_Tiers-brightgreen?style=flat)](#-cost--resource-efficiency)
 
-**Hope UltraLight** is a lean, single-process, privacy-conscious personal executive AI agent built on a **3-Tier Brain Architecture** and operated entirely through **Telegram**.
+**E.D.I.T.H.** is the calm, discreet personality layer for Hope UltraLight: a lean, single-process, privacy-conscious personal executive AI agent built on a **3-Tier Brain Architecture** and operated entirely through **Telegram**.
 
 Designed specifically to run 24/7 on edge hardware (such as an old laptop or low-power mini-PC), Hope manages your schedule, monitors and drafts emails, conducts deep public research, records enduring memory, and executes routines without requiring bulky browser runtimes, paid cloud subscriptions, or exposed public network ports.
 
@@ -310,8 +310,10 @@ Hope UltraLight reads its configuration from `.env` via [config.py](file:///d:/H
 | `OPENROUTER_MODEL` | No | `thinkingmachines/inkling-2-small:free` | Model identifier for Tier 2 public research workhorse. |
 | `DAILY_OPENROUTER_LIMIT` | No | `200` | Maximum daily requests to Tier 2 before failover to Tier 3. |
 | `GEMINI_API_KEY` | Recommended | _None_ | Free API key from [Google AI Studio](https://aistudio.google.com/) for Tier 3 and audio. |
-| `GEMINI_MODEL` | No | `gemini-2.5-flash` | Gemini model for 429 failovers and audio voice notes. |
+| `GEMINI_MODEL` | No | `gemini-3.5-flash-lite` | Gemini model for 429 failovers and audio voice notes. |
 | `DAILY_GEMINI_LIMIT` | No | `50` | Maximum daily requests to Tier 3. |
+| `AUTONOMOUS_RESEARCH_QUERIES` | No | _Empty_ | Pipe-separated research watches, e.g. `Python remote jobs|AI startup leads India`. |
+| `AUTONOMOUS_RESEARCH_INTERVAL_HOURS` | No | `6` | Hours between configured autonomous research watches. |
 | `REQUIRE_APPROVAL` | No | `true` | When `true`, enforces Human-in-the-Loop buttons for mutating actions. |
 | `APPROVAL_EXPIRY_MINUTES` | No | `30` | Minutes before an unapproved action expires in SQLite. |
 | `RESPONSE_CACHE_HOURS` | No | `4` | Retention period for public research query caching. |
@@ -625,7 +627,7 @@ Edit the corresponding keys in your `.env`:
 OPENROUTER_MODEL=meta-llama/llama-3.3-70b-instruct:free
 
 # For Tier 3 (Gemini):
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 </details>
 

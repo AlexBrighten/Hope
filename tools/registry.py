@@ -4,7 +4,7 @@ Supplies only 3 to 6 compact tool schemas per turn, keeping CPU prompt prefill u
 
 import logging
 from typing import Dict, Any, List, Callable, Optional, Tuple
-from tools.web import web_search, fetch_page, summarize_url, company_brief
+from tools.web import web_search, fetch_page, summarize_url, company_brief, deep_research, find_job_leads
 from tools.memory import remember, recall
 from tools.gmail import mail_search, mail_read, mail_draft, mail_send
 from tools.calendar import cal_list, cal_add, cal_delete
@@ -59,6 +59,39 @@ TOOL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                     "query": {"type": "string", "description": "Company name or founder name"}
                 },
                 "required": ["query"]
+            }
+        }
+    },
+    "deep_research": {
+        "function": deep_research,
+        "category": "research",
+        "schema": {
+            "name": "deep_research",
+            "description": "Perform multi-source web research by searching and opening the strongest results.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Research question or topic"},
+                    "max_sources": {"type": "integer", "description": "Number of sources to open (default: 3)"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+    "find_job_leads": {
+        "function": find_job_leads,
+        "category": "research",
+        "schema": {
+            "name": "find_job_leads",
+            "description": "Find current public job or business-lead opportunities for a role and location.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "role": {"type": "string", "description": "Role, skill, or service to find"},
+                    "location": {"type": "string", "description": "Location or remote preference"},
+                    "max_sources": {"type": "integer", "description": "Number of sources to open"}
+                },
+                "required": ["role"]
             }
         }
     },
@@ -277,7 +310,7 @@ def get_contextual_tools(category: Optional[str] = None) -> List[Dict[str, Any]]
     elif category == "calendar":
         keys = ["cal_list", "cal_add", "cal_delete"]
     elif category == "research":
-        keys = ["web_search", "fetch_page", "company_brief"]
+        keys = ["web_search", "fetch_page", "company_brief", "deep_research", "find_job_leads"]
     elif category == "github":
         keys = ["gh_issues", "gh_read_file", "web_search"]
     elif category == "sheets":
@@ -307,4 +340,3 @@ async def dispatch_tool_call(name: str, arguments: Dict[str, Any]) -> Any:
     except Exception as e:
         logger.error(f"Error executing tool {name} with args {arguments}: {e}")
         return f"Tool execution failed: {e}"
-

@@ -21,8 +21,14 @@ class ProviderManager:
         self.openrouter = openrouter_brain
         self.gemini = gemini_brain
 
-    def _generate_cache_key(self, messages: List[Dict[str, Any]]) -> str:
-        serialized = "".join(f"{m.get('role')}:{m.get('content', '')}" for m in messages)
+    def _generate_cache_key(
+        self,
+        messages: List[Dict[str, Any]],
+        system_prompt: Optional[str] = None
+    ) -> str:
+        serialized = f"system:{system_prompt or ''}" + "".join(
+            f"{m.get('role')}:{m.get('content', '')}" for m in messages
+        )
         return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
     async def chat(
@@ -37,7 +43,7 @@ class ProviderManager:
         """Execute chat turn through the appropriate provider with caching and failover."""
         # 1. Check response cache for public non-tool queries
         if not is_private and not tools:
-            cache_key = self._generate_cache_key(messages)
+            cache_key = self._generate_cache_key(messages, system_prompt)
             cached = db.get_cached_response(cache_key, max_age_hours=config.response_cache_hours)
             if cached:
                 logger.info(f"Response cache hit for key {cache_key[:8]}")
@@ -95,7 +101,7 @@ class ProviderManager:
                     db.record_usage("openrouter", res.get("prompt_tokens", 0), res.get("completion_tokens", 0))
                     # Cache public responses without tools
                     if not tools and res.get("content"):
-                        cache_key = self._generate_cache_key(messages)
+                        cache_key = self._generate_cache_key(messages, system_prompt)
                         db.set_cached_response(cache_key, "openrouter", res["content"])
                     return res
                 except Exception as e:
@@ -134,7 +140,7 @@ class ProviderManager:
             )
             db.record_usage("gemini", res.get("prompt_tokens", 0), res.get("completion_tokens", 0))
             if not tools and res.get("content"):
-                cache_key = self._generate_cache_key(messages)
+                cache_key = self._generate_cache_key(messages, system_prompt)
                 db.set_cached_response(cache_key, "gemini", res["content"])
             return res
 
@@ -142,4 +148,3 @@ class ProviderManager:
 
 
 provider_manager = ProviderManager()
-

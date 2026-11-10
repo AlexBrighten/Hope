@@ -46,6 +46,18 @@ CREATE TABLE IF NOT EXISTS memories (
     value TEXT NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 5. Local conversation history
+CREATE TABLE IF NOT EXISTS conversation_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversation_messages_chat
+ON conversation_messages (chat_id, id);
 """
 
 
@@ -226,7 +238,38 @@ class DatabaseManager:
                 lines.append(f"- **{mem['key']}**: {mem['value']}")
         md_file.write_text("\n".join(lines), encoding="utf-8")
 
+    # --------------------------------------------------------------------------
+    # Conversation Context
+    # --------------------------------------------------------------------------
+    def add_conversation_message(self, chat_id: str, role: str, content: str):
+        if not content.strip():
+            return
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO conversation_messages (chat_id, role, content)
+                VALUES (?, ?, ?)
+                """,
+                (chat_id, role, content.strip())
+            )
+
+    def get_conversation_messages(self, chat_id: str, limit: int = 12) -> List[Dict[str, str]]:
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT role, content
+                FROM conversation_messages
+                WHERE chat_id = ?
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (chat_id, limit)
+            ).fetchall()
+        return [
+            {"role": row["role"], "content": row["content"]}
+            for row in reversed(rows)
+        ]
+
 
 # Global singleton instance
 db = DatabaseManager()
-

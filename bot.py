@@ -5,6 +5,7 @@ Runs single async long-polling process with zero open ports, 1-click approvals, 
 import sys
 import logging
 import asyncio
+from datetime import datetime
 from pathlib import Path
 from telegram import Update, constants
 from telegram.ext import (
@@ -18,6 +19,7 @@ from telegram.ext import (
 
 from config import config
 from database import db
+from brain.persona import EDIT_PERSONA
 from brain.router import router, RouteDecision
 from brain.providers import provider_manager
 from tools.registry import get_contextual_tools, dispatch_tool_call
@@ -39,6 +41,17 @@ def is_authorized(update: Update) -> bool:
     if not user or not config.allowed_user_id:
         return False
     return user.id == config.allowed_user_id
+
+
+async def start_scheduler(application: Application) -> None:
+    """Attach the Telegram application and start scheduling inside its event loop."""
+    scheduler.bot_app = application
+    scheduler.start()
+
+
+async def stop_scheduler(_application: Application) -> None:
+    """Stop scheduled jobs before the Telegram application shuts down."""
+    scheduler.shutdown()
 
 
 async def unauthorized_warning(update: Update):
@@ -63,12 +76,14 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await unauthorized_warning(update)
 
     msg = (
-        "🌟 **Hope UltraLight Agent Ready**\n\n"
-        "Your autonomous personal executive AI is active and connected.\n\n"
+        "🌟 **E.D.I.T.H. Online**\n\n"
+        "Your discreet personal executive AI is active and connected.\n\n"
         "**Available Commands:**\n"
         "• `/status` — System health, brain status & quota usage\n"
         "• `/brief` — Generate today's executive morning briefing\n"
         "• `/deep <prompt>` — Deep reasoning mode via OpenRouter\n"
+        "• `/research <topic>` — Multi-source deep research\n"
+        "• `/jobs <role>` — Find current job and business leads\n"
         "• `/local <prompt>` — Force local Ollama (0 cloud tokens)\n"
         "• `/free <prompt>` — Force OpenRouter Inkling 2 Small\n"
         "• `/gemini <prompt>` — Force Gemini 2.5 Flash\n"
@@ -91,7 +106,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ol_usage = db.get_provider_usage_today("ollama")
 
     status_text = (
-        "📊 **Hope UltraLight Health & Quota Report**\n\n"
+        "📊 **E.D.I.T.H. Health & Quota Report**\n\n"
         f"🧠 **Tier 1: Local Ollama (`{config.ollama_model}`)**\n"
         f"• Status: {'🟢 Online' if ollama_health.get('online') else '🔴 Offline'}\n"
         f"• Model Installed: {'✅ Yes' if ollama_health.get('installed') else '⚠️ Not Found'}\n"
@@ -152,14 +167,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # 3. Contextual compact tools
     tools = get_contextual_tools(route.tool_category)
 
-    messages = [
-        {"role": "user", "content": route.cleaned_query}
-    ]
+    chat_history = db.get_conversation_messages(str(chat_id), limit=12)
+    messages = chat_history + [{"role": "user", "content": route.cleaned_query}]
+    db.add_conversation_message(str(chat_id), "user", route.cleaned_query)
 
     system_prompt = (
-        "You are Hope, an autonomous personal executive AI agent. "
-        "Be direct, concise, and helpful. Format output using clean Markdown. "
-        "When needed, invoke appropriate tools to assist the user."
+        f"{EDIT_PERSONA} "
+        f"The current local date and time is {datetime.now().astimezone().isoformat()}. "
+        "You have access to tools. Use them whenever the user asks you to inspect or "
+        "change their calendar, reminders, email, research, leads, or memory. "
+        "For calendar reminders, create a calendar event with a sensible duration; "
+        "ask one concise clarification only when the date or time is genuinely missing. "
+        "For email, draft or send through Gmail rather than claiming you cannot. "
+        "Sending email may require the user's approval button. Never say a capability "
+        "is unavailable before attempting the relevant tool."
     )
 
     # 4. Execute turn through Provider Chain
@@ -219,6 +240,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # 6. Send final reply
         if not content:
             content = "Done."
+
+        db.add_conversation_message(str(chat_id), "assistant", content)
 
         # Telegram 4096 character limit safety chunking
         if len(content) > 4000:
@@ -307,7 +330,13 @@ def main():
         print("=" * 60 + "\n")
         sys.exit(1)
 
-    app = Application.builder().token(config.telegram_bot_token).build()
+    app = (
+        Application.builder()
+        .token(config.telegram_bot_token)
+        .post_init(start_scheduler)
+        .post_shutdown(stop_scheduler)
+        .build()
+    )
 
     # Register handlers
     app.add_handler(CommandHandler("start", cmd_start))
@@ -315,16 +344,12 @@ def main():
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("brief", cmd_brief))
     app.add_handler(CommandHandler("mem", cmd_mem))
-    app.add_handler(CommandHandler(["deep", "local", "free", "gemini"], handle_message))
+    app.add_handler(CommandHandler(["deep", "research", "jobs", "local", "free", "gemini"], handle_message))
 
     # Catch-all text messages and slash overrides
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     app.add_handler(MessageHandler(filters.VOICE, handle_voice))
     app.add_handler(CallbackQueryHandler(handle_callback_query))
-
-    # Attach bot application to scheduler and start
-    scheduler.bot_app = app
-    scheduler.start()
 
     logger.info("🚀 Hope UltraLight Telegram Bot is online and polling...")
     app.run_polling(drop_pending_updates=True)
@@ -332,4 +357,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

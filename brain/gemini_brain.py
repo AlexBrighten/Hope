@@ -73,6 +73,12 @@ class GeminiBrain:
         url = f"{self.base_url}/{self.model}:generateContent?key={self.api_key}"
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             res = await client.post(url, json=payload)
+            if res.status_code == 404:
+                raise RuntimeError(
+                    f"Gemini model '{self.model}' was not found or is no longer available. "
+                    "Set GEMINI_MODEL to an available model such as "
+                    "'gemini-3.5-flash-lite' and restart the bot."
+                )
             res.raise_for_status()
             data = res.json()
 
@@ -128,6 +134,12 @@ class GeminiBrain:
         url = f"{self.base_url}/{self.model}:generateContent?key={self.api_key}"
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             res = await client.post(url, json=payload)
+            if res.status_code == 404:
+                raise RuntimeError(
+                    f"Gemini model '{self.model}' was not found or is no longer available. "
+                    "Set GEMINI_MODEL to an available model such as "
+                    "'gemini-3.5-flash-lite' and restart the bot."
+                )
             res.raise_for_status()
             data = res.json()
             candidates = data.get("candidates", [])
@@ -139,4 +151,3 @@ class GeminiBrain:
 
 
 gemini_brain = GeminiBrain()
-
