@@ -321,6 +321,11 @@ Hope UltraLight reads its configuration from `.env` via [config.py](file:///d:/H
 | `TIMEZONE` | No | `Asia/Kolkata` | Local timezone for morning briefings and routine triggers. |
 | `GITHUB_TOKEN` | Optional | _None_ | GitHub Fine-Grained Token for repository inspections. |
 | `GITHUB_ALLOWED_REPOS` | Optional | _None_ | Comma-separated list of whitelisted repos (e.g. `owner/repo1,owner/repo2`). |
+| `SMTP_EMAIL` | Optional | _None_ | Email address for direct SMTP sending (e.g. your Gmail or Outlook address). |
+| `SMTP_PASSWORD` | Optional | _None_ | 16-character App Password for SMTP sending (takes 15s to create!). |
+| `SMTP_HOST` | No | `smtp.gmail.com` | SMTP host server (e.g. `smtp.gmail.com` or `smtp.office365.com`). |
+| `SMTP_PORT` | No | `587` | SMTP port (`587` for STARTTLS, `465` for SSL). |
+| `ALLOW_CLOUD_FALLBACK` | No | `true` | Allows potato PCs to fall back to free cloud Gemini/OpenRouter if Ollama is offline. |
 | `GOOGLE_CREDENTIALS_FILE` | Optional | `credentials.json` | Path to Google Cloud OAuth client secrets file. |
 | `GOOGLE_TOKEN_FILE` | Optional | `token.json` | Path where generated Google Workspace OAuth tokens are saved. |
 | `DATABASE_PATH` | No | `workspace/hope.db` | Path to persistent SQLite database. |
@@ -405,15 +410,20 @@ Diagnostics complete! Run 'python bot.py' to launch Hope UltraLight.
 
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
-| `/start` or `/help` | — | Displays welcome banner and command reference. |
+| `/start` or `/help` | — | Displays welcome banner and full command directory. |
+| `/pc` or `/system` | — | **Potato PC Butler**: Real-time CPU, RAM, battery, disk space, and top memory-hogging processes. |
+| `/radar` | — | **Live Tech Radar**: Top Hacker News engineering discussions & trending GitHub repositories. |
+| `/research <topic>` | `<topic>` | **Autonomous Deep Research**: Multi-step deep search & scraping, compiles an executive dossier to `workspace/reports/`. |
+| `/clean` | — | **Disk Cleaner**: Clears safe temporary files on the laptop to reclaim SSD storage. |
+| `/mail <to> \| <sub\> \| <msg>` | `parameters` | **Instant Email**: Prepares and sends real emails via SMTP App Password or Google OAuth with 1-click approval. |
 | `/status` | — | Real-time health report for all 3 tiers, Ollama status, and daily quota consumption. |
-| `/brief` | — | Triggers an immediate executive morning briefing compilation. |
+| `/brief` | — | Triggers an immediate executive morning briefing (schedule + unread emails + tech radar). |
 | `/mem` | — | Dumps current long-term memory notes stored in SQLite. |
-| Natural language | — | Say “remind me”, “add a task”, “what are my tasks?”, or “mark task ... complete”. |
+| Natural language | — | Say “remind me”, “how is my laptop doing?”, “add a task”, or “what's on my calendar?”. |
 | `/deep <prompt>` | `<prompt>` | Forces Tier 2 OpenRouter execution with `reasoning_effort="high"` for complex code or logic. |
 | `/local <prompt>` | `<prompt>` | Forces Tier 1 local Ollama execution (0 cloud tokens, 100% offline). |
 | `/free <prompt>` | `<prompt>` | Forces Tier 2 OpenRouter Inkling 2 Small Free execution. |
-| `/gemini <prompt>` | `<prompt>` | Forces Tier 3 Google Gemini 2.5 Flash execution. |
+| `/gemini <prompt>` | `<prompt>` | Forces Tier 3 Google Gemini execution. |
 
 ### Real-World Interaction Examples
 

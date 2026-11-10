@@ -69,7 +69,7 @@ class ProviderManager:
                 return res
             except Exception as e:
                 logger.error(f"Local brain error on private query: {e}")
-                if is_private:
+                if is_private and not config.allow_cloud_fallback:
                     return {
                         "provider": "privacy_guard",
                         "model": "none",
@@ -78,14 +78,15 @@ class ProviderManager:
                             "Because this request involves your private data (email, calendar, or notes), "
                             "it **cannot be forwarded to cloud AI** without your explicit confirmation.\n\n"
                             "• Ensure Ollama is running (`ollama serve`).\n"
-                            "• Or retry by typing `/gemini <your query>` if you grant permission to use cloud AI."
+                            "• Set `ALLOW_CLOUD_FALLBACK=true` in `.env` if you want automatic cloud fallback.\n"
+                            "• Or retry by typing `/gemini <your query>` if you grant one-time permission to use cloud AI."
                         ),
                         "tool_calls": [],
                         "prompt_tokens": 0,
                         "completion_tokens": 0
                     }
-                # If not private, allow falling through to cloud
-                logger.info("Non-private query failed on local; falling over to cloud tier.")
+                # If not private or cloud fallback is explicitly permitted
+                logger.info("Local brain unavailable; falling over to cloud tier.")
                 tier = 2
 
         # 3. Tier 2: OpenRouter Free (Inkling 2 Small)

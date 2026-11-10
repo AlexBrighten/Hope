@@ -12,6 +12,9 @@ beautifulsoup4>=4.12.0
 # Scheduling & Automation
 apscheduler>=3.10.4
 
+# Potato PC Butler & Hardware Diagnostics
+psutil>=5.9.0
+
 # Google Ecosystem (Unified OAuth for Gmail, Calendar, Sheets)
 google-api-python-client>=2.120.0
 google-auth-httplib2>=0.2.0

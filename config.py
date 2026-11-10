@@ -47,6 +47,13 @@ class Config:
     google_credentials_file: Path = BASE_DIR / os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
     google_token_file: Path = BASE_DIR / os.getenv("GOOGLE_TOKEN_FILE", "token.json")
 
+    # SMTP Settings (Standard instant email alternative to Google OAuth)
+    smtp_host: str = os.getenv("SMTP_HOST", "smtp.gmail.com").strip()
+    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
+    smtp_email: str = os.getenv("SMTP_EMAIL", "").strip()
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "").strip()
+    allow_cloud_fallback: bool = os.getenv("ALLOW_CLOUD_FALLBACK", "false").lower() in ("true", "1", "yes")
+
     # Security & Safeguards
     require_approval: bool = os.getenv("REQUIRE_APPROVAL", "true").lower() in ("true", "1", "yes")
     approval_expiry_minutes: int = int(os.getenv("APPROVAL_EXPIRY_MINUTES", "30"))
@@ -68,6 +75,9 @@ class Config:
 
     def is_tier3_ready(self) -> bool:
         return bool(self.gemini_api_key)
+
+    def is_smtp_ready(self) -> bool:
+        return bool(self.smtp_email and self.smtp_password)
 
 
 # Global singleton instance

@@ -36,17 +36,29 @@ RESEARCH_PATTERNS = [
     r"\b(summarize\s+url|read\s+page|fetch\s+page|scrape)\b"
 ]
 
+# System & Hardware Butler keywords
+SYSTEM_PATTERNS = [
+    r"\b(pc|laptop|computer|battery|cpu|ram|memory\s+usage|disk|storage|hardware|clean\s+temp|temp\s+files)\b"
+]
+
 
 class Router:
     def __init__(self):
         self._private_regex = re.compile("|".join(PRIVATE_PATTERNS), re.IGNORECASE)
         self._research_regex = re.compile("|".join(RESEARCH_PATTERNS), re.IGNORECASE)
+        self._system_regex = re.compile("|".join(SYSTEM_PATTERNS), re.IGNORECASE)
 
     def route(self, raw_query: str) -> RouteDecision:
         query = raw_query.strip()
         effort = "low"
 
         # 1. Slash command overrides
+        if query.startswith("/pc") or query.startswith("/system"):
+            return RouteDecision(tier=1, is_private=False, reason="manual_override_system", tool_category="system", reasoning_effort="low", cleaned_query="Report the current PC hardware and resource status")
+
+        if query.startswith("/radar"):
+            return RouteDecision(tier=2, is_private=False, reason="manual_override_radar", tool_category="research", reasoning_effort="low", cleaned_query="Fetch the latest tech radar")
+
         if query.startswith("/local"):
             cleaned = query[6:].strip()
             return RouteDecision(tier=1, is_private=True, reason="manual_override_local", tool_category=None, reasoning_effort="low", cleaned_query=cleaned)
@@ -106,7 +118,18 @@ class Router:
                 cleaned_query=query
             )
 
-        # 4. Short conversational chat, greetings, definitions, time -> Tier 1 (Local Ollama)
+        # 4. System & Hardware Butler (Battery, CPU, RAM, Disk, Temp)
+        if self._system_regex.search(query):
+            return RouteDecision(
+                tier=1,
+                is_private=False,
+                reason="system_hardware_monitor",
+                tool_category="system",
+                reasoning_effort="low",
+                cleaned_query=query
+            )
+
+        # 5. Short conversational chat, greetings, definitions, time -> Tier 1 (Local Ollama)
         return RouteDecision(
             tier=1,
             is_private=False,

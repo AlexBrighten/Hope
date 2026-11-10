@@ -25,6 +25,10 @@ from brain.providers import provider_manager
 from tools.registry import get_contextual_tools, dispatch_tool_call
 from tools.approval import execute_approved_action, reject_action
 from tools.memory import get_all_memories_text
+from tools.system_info import format_pc_report, clean_temp_files
+from tools.radar import get_tech_radar_summary
+from tools.deep_research import conduct_deep_research
+from tools.gmail import mail_send
 from scheduler import scheduler
 
 # Configure logging
@@ -76,19 +80,24 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await unauthorized_warning(update)
 
     msg = (
-        "🌟 **Hope Online**\n\n"
-        "Your discreet personal executive AI is active and connected.\n\n"
-        "**Available Commands:**\n"
-        "• `/status` — System health, brain status & quota usage\n"
-        "• `/brief` — Generate today's executive morning briefing\n"
-        "• `/deep <prompt>` — Deep reasoning mode via OpenRouter\n"
-        "• `/research <topic>` — Multi-source deep research\n"
-        "• `/jobs <role>` — Find current job and business leads\n"
-        "• `/local <prompt>` — Force local Ollama (0 cloud tokens)\n"
-        "• `/free <prompt>` — Force OpenRouter Inkling 2 Small\n"
-        "• `/gemini <prompt>` — Force Gemini 2.5 Flash\n"
-        "• `/mem` — View long-term memory notes\n\n"
-        "_Tip: Send a text message, search query, or meeting request naturally!_"
+        "🌟 **Hope — Personal AI Executive & Laptop Butler**\n\n"
+        "Active, autonomous, and running right on your PC.\n\n"
+        "**💻 Potato PC Butler:**\n"
+        "• `/pc` — Hardware health (CPU, RAM, Battery, Disks, Top Memory Hogs)\n"
+        "• `/clean` — Safely clear temporary files to free disk space\n\n"
+        "**🌐 Intelligence & Research:**\n"
+        "• `/research <topic>` — Autonomous multi-page deep research dossier\n"
+        "• `/radar` — Live Tech Radar (Hacker News top stories & GitHub trending)\n"
+        "• `/deep <prompt>` — Deep reasoning mode via OpenRouter\n\n"
+        "**✉️ Communications & Schedule:**\n"
+        "• `/mail <to> | <subject> | <body>` — Instant email composer with approval\n"
+        "• `/brief` — Today's executive agenda + morning brief\n"
+        "• `/mem` — View persistent second brain notes\n\n"
+        "**⚙️ Controls & Overrides:**\n"
+        "• `/status` — System health, brain tiers & quota usage\n"
+        "• `/local <query>` — Force local Ollama (0 cloud tokens)\n"
+        "• `/gemini <query>` — Force Gemini Flash\n\n"
+        "_Tip: Ask me anything naturally, e.g. 'How much RAM is Chrome using?' or 'Research Cursor AI vs Windsurf'!_"
     )
     await safe_reply(update.message, msg)
 
@@ -143,6 +152,79 @@ async def cmd_mem(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = get_all_memories_text()
     await safe_reply(update.message, text)
+
+
+async def cmd_pc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Instant hardware butler report for the potato PC."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    report = format_pc_report()
+    await safe_reply(update.message, report)
+
+
+async def cmd_radar(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Instant Hacker News & GitHub trending tech radar."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    status_msg = await safe_reply(update.message, "📡 *Scanning Hacker News and GitHub trends...*")
+    radar_report = await get_tech_radar_summary()
+    if status_msg:
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
+    await safe_reply(update.message, radar_report)
+
+
+async def cmd_research(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Autonomous deep research dossier generator."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    text = update.message.text or ""
+    topic = text.replace("/research", "", 1).strip()
+    if not topic:
+        return await safe_reply(update.message, "ℹ️ Usage: `/research <topic or company>`\nExample: `/research Cursor AI vs Windsurf`")
+
+    status_msg = await safe_reply(update.message, f"🔎 *Initiating deep research on '{topic}'...*\n_Formulating search vectors & scraping top web sources..._")
+    dossier = await conduct_deep_research(topic)
+    if status_msg:
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
+    await safe_reply(update.message, dossier["summary"])
+
+
+async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Clean safe temporary files on the laptop to reclaim disk space."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    res = clean_temp_files()
+    await safe_reply(update.message, res)
+
+
+async def cmd_mail(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Quick direct email composer."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    text = update.message.text or ""
+    raw = text.replace("/mail", "", 1).strip()
+    parts = [p.strip() for p in raw.split("|")]
+    if len(parts) < 3:
+        return await safe_reply(
+            update.message,
+            "ℹ️ Usage: `/mail <to> | <subject> | <body>`\nExample: `/mail boss@work.com | Project Update | Hey, the deployment is finished.`"
+        )
+    to, subject, body = parts[0], parts[1], "|".join(parts[2:])
+    res = await mail_send(to=to, subject=subject, body=body)
+    if isinstance(res, dict) and "reply_markup" in res:
+        await safe_reply(
+            update.message,
+            f"⚠️ **Approval Required**\n\n{res.get('description')}",
+            reply_markup=res["reply_markup"]
+        )
+    else:
+        await safe_reply(update.message, str(res.get("result", res)))
 
 
 # ------------------------------------------------------------------------------
@@ -346,7 +428,12 @@ def main():
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("brief", cmd_brief))
     app.add_handler(CommandHandler("mem", cmd_mem))
-    app.add_handler(CommandHandler(["deep", "research", "jobs", "local", "free", "gemini"], handle_message))
+    app.add_handler(CommandHandler(["pc", "system"], cmd_pc))
+    app.add_handler(CommandHandler("radar", cmd_radar))
+    app.add_handler(CommandHandler("research", cmd_research))
+    app.add_handler(CommandHandler("clean", cmd_clean))
+    app.add_handler(CommandHandler("mail", cmd_mail))
+    app.add_handler(CommandHandler(["deep", "jobs", "local", "free", "gemini"], handle_message))
 
     # Catch-all text messages and slash overrides
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))

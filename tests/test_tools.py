@@ -50,6 +50,20 @@ class TestTools(unittest.TestCase):
         self.assertIn(task_id, asyncio.run(list_tasks()))
         self.assertIn("Completed", asyncio.run(complete_task(task_id)))
 
+    def test_system_stats_tool(self):
+        """PC hardware butler must gather stats and format cleanly."""
+        res = asyncio.run(dispatch_tool_call("pc_status", {}))
+        self.assertIn("Potato PC Hardware Status", res)
+        self.assertIn("CPU Usage", res)
+        self.assertIn("RAM Usage", res)
+
+    def test_system_contextual_filtering(self):
+        """System tools must return pc_status and clean_temp."""
+        sys_tools = get_contextual_tools("system")
+        names = [t["function"]["name"] for t in sys_tools]
+        self.assertIn("pc_status", names)
+        self.assertIn("clean_temp", names)
+
 
 if __name__ == "__main__":
     unittest.main()

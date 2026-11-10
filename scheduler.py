@@ -16,6 +16,7 @@ from tools.calendar import cal_list
 from tools.gmail import mail_search
 from tools.web import deep_research
 from tools.memory import remember
+from tools.radar import fetch_hn_top_stories
 
 logger = logging.getLogger(__name__)
 
@@ -43,28 +44,40 @@ class HopeScheduler:
         """Compile and deliver 8:00 AM executive morning brief."""
         logger.info("Executing Morning Briefing job...")
         try:
-            # 1. Fetch private schedule and inbox
+            # 1. Fetch private schedule, unread emails, and live tech stories
             cal_summary = await cal_list(days_ahead=1, max_results=10)
             inbox_summary = await mail_search(query="is:unread", max_results=5)
+            hn_stories = await fetch_hn_top_stories(limit=2)
 
-            # 2. Local distillation
-            prompt = (
-                f"You are Hope, preparing a concise executive briefing. "
-                f"Create a concise, motivating executive morning briefing for the owner today ({datetime.now().strftime('%A, %B %d')}).\n\n"
-                f"Schedule:\n{cal_summary}\n\n"
-                f"Unread Emails:\n{inbox_summary}\n\n"
-                f"Keep it brief with clean bullet points and clear action items."
-            )
+            tech_snippet = ""
+            if hn_stories:
+                tech_snippet = "\n\n🔥 **Morning Tech Radar**:\n" + "\n".join(
+                    f"• [{s['title']}]({s['url']}) ({s['score']} pts)" for s in hn_stories
+                )
 
-            res = await local_brain.chat(
-                messages=[{"role": "user", "content": prompt}],
-                system_prompt=HOPE_PERSONA
-            )
-            briefing_text = res.get("content", "")
+            # 2. Local distillation if available
+            briefing_text = ""
+            try:
+                prompt = (
+                    f"You are Hope, preparing a concise executive briefing. "
+                    f"Create a concise, motivating executive morning briefing for the owner today ({datetime.now().strftime('%A, %B %d')}).\n\n"
+                    f"Schedule:\n{cal_summary}\n\n"
+                    f"Unread Emails:\n{inbox_summary}\n\n"
+                    f"Keep it brief with clean bullet points and clear action items."
+                )
+
+                res = await local_brain.chat(
+                    messages=[{"role": "user", "content": prompt}],
+                    system_prompt=HOPE_PERSONA
+                )
+                briefing_text = res.get("content", "")
+            except Exception as e:
+                logger.debug(f"Local brain summary unavailable for briefing: {e}")
+
             if not briefing_text:
-                briefing_text = f"☀️ **Good Morning! Here is your agenda:**\n\n{cal_summary}\n\n{inbox_summary}"
+                briefing_text = f"📅 **Agenda**:\n{cal_summary}\n\n📬 **Inbox**:\n{inbox_summary}"
 
-            await self.send_telegram_alert(f"☀️ **Hope Executive Briefing**\n\n{briefing_text}")
+            await self.send_telegram_alert(f"☀️ **Hope Executive Morning Briefing**\n_{datetime.now().strftime('%A, %B %d')}_\n\n{briefing_text}{tech_snippet}")
         except Exception as e:
             logger.error(f"Morning briefing failed: {e}")
 

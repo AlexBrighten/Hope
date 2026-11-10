@@ -3,6 +3,8 @@ Supplies only 3 to 6 compact tool schemas per turn, keeping CPU prompt prefill u
 """
 
 import logging
+import asyncio
+import inspect
 from typing import Dict, Any, List, Callable, Optional, Tuple
 from tools.web import web_search, fetch_page, summarize_url, company_brief, deep_research, find_job_leads
 from tools.memory import remember, recall, create_task, list_tasks, complete_task, cancel_task
@@ -10,8 +12,28 @@ from tools.gmail import mail_search, mail_read, mail_draft, mail_send
 from tools.calendar import cal_list, cal_add, cal_delete
 from tools.sheets import sheet_append
 from tools.github import gh_issues, gh_read_file
+from tools.system_info import format_pc_report, clean_temp_files
+from tools.radar import get_tech_radar_summary
+from tools.deep_research import conduct_deep_research
 
 logger = logging.getLogger(__name__)
+
+
+async def pc_status() -> str:
+    return format_pc_report()
+
+
+async def clean_temp() -> str:
+    return clean_temp_files()
+
+
+async def tech_radar() -> str:
+    return await get_tech_radar_summary()
+
+
+async def deep_dossier(topic: str) -> str:
+    res = await conduct_deep_research(topic)
+    return res["summary"]
 
 # Compact tool metadata
 TOOL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
@@ -356,6 +378,50 @@ TOOL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                 "required": ["repo", "file_path"]
             }
         }
+    },
+
+    # System & Hardware Butler tools
+    "pc_status": {
+        "function": pc_status,
+        "category": "system",
+        "schema": {
+            "name": "pc_status",
+            "description": "Get real-time CPU, RAM, battery, disk space, and top memory-hogging processes on this PC.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    "clean_temp": {
+        "function": clean_temp,
+        "category": "system",
+        "schema": {
+            "name": "clean_temp",
+            "description": "Clean temporary files on the laptop to safely free up disk storage.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    "tech_radar": {
+        "function": tech_radar,
+        "category": "research",
+        "schema": {
+            "name": "tech_radar",
+            "description": "Fetch live trending engineering and tech discussions from Hacker News and trending GitHub repos.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    "deep_dossier": {
+        "function": deep_dossier,
+        "category": "research",
+        "schema": {
+            "name": "deep_dossier",
+            "description": "Conduct autonomous multi-step deep research across multiple web sources and save an executive dossier.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "topic": {"type": "string", "description": "Subject or question to deeply research"}
+                },
+                "required": ["topic"]
+            }
+        }
     }
 }
 
@@ -369,7 +435,7 @@ def get_contextual_tools(category: Optional[str] = None) -> List[Dict[str, Any]]
     elif category == "calendar":
         keys = ["cal_list", "cal_add", "cal_delete"]
     elif category == "research":
-        keys = ["web_search", "fetch_page", "company_brief", "deep_research", "find_job_leads"]
+        keys = ["web_search", "fetch_page", "deep_dossier", "tech_radar", "company_brief"]
     elif category == "github":
         keys = ["gh_issues", "gh_read_file", "web_search"]
     elif category == "sheets":
@@ -378,9 +444,11 @@ def get_contextual_tools(category: Optional[str] = None) -> List[Dict[str, Any]]
         keys = ["remember", "recall"]
     elif category == "tasks":
         keys = ["create_task", "list_tasks", "complete_task", "cancel_task"]
+    elif category == "system":
+        keys = ["pc_status", "clean_temp", "remember", "recall"]
     else:
         # Default lightweight general tools
-        keys = ["web_search", "company_brief", "remember", "recall"]
+        keys = ["web_search", "pc_status", "company_brief", "remember", "recall"]
 
     for k in keys:
         if k in TOOL_DEFINITIONS:
@@ -397,7 +465,9 @@ async def dispatch_tool_call(name: str, arguments: Dict[str, Any]) -> Any:
 
     func = entry["function"]
     try:
-        return await func(**arguments)
+        if inspect.iscoroutinefunction(func):
+            return await func(**arguments)
+        return func(**arguments)
     except Exception as e:
         logger.error(f"Error executing tool {name} with args {arguments}: {e}")
         return f"Tool execution failed: {e}"

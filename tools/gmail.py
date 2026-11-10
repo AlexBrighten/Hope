@@ -3,8 +3,10 @@ Search, read, draft, and send emails (with human-in-the-loop approval gate).
 """
 
 import base64
+import smtplib
 import logging
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from typing import Dict, Any, Optional
 from googleapiclient.discovery import build
 from tools.google_auth import google_auth
@@ -96,14 +98,56 @@ async def mail_draft(to: str, subject: str, body: str) -> str:
 
 
 async def _actual_send_email(to: str, subject: str, body: str) -> str:
-    """Internal helper to actually dispatch the email via Gmail API."""
-    service = _get_gmail_service()
-    message = MIMEText(body)
-    message["to"] = to
-    message["subject"] = subject
-    raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
-    sent = service.users().messages().send(userId="me", body={"raw": raw}).execute()
-    return f"Email sent to {to} with subject '{subject}'. Message ID: `{sent.get('id')}`"
+    """Internal helper to dispatch email via Google OAuth API or standard SMTP."""
+    # 1. Try Google OAuth first if token exists
+    if config.google_token_file.exists():
+        try:
+            service = _get_gmail_service()
+            message = MIMEText(body)
+            message["to"] = to
+            message["subject"] = subject
+            raw = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+            sent = service.users().messages().send(userId="me", body={"raw": raw}).execute()
+            return f"✅ Email sent via Gmail API to `{to}` (ID: `{sent.get('id')}`)."
+        except Exception as e:
+            logger.warning(f"Gmail API send failed: {e}. Trying SMTP fallback...")
+
+    # 2. Try SMTP if configured
+    if config.is_smtp_ready():
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = config.smtp_email
+            msg["To"] = to
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "plain"))
+
+            # Port 465 is SSL, 587 is STARTTLS
+            if config.smtp_port == 465:
+                with smtplib.SMTP_SSL(config.smtp_host, config.smtp_port, timeout=15) as server:
+                    server.login(config.smtp_email, config.smtp_password)
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP(config.smtp_host, config.smtp_port, timeout=15) as server:
+                    server.starttls()
+                    server.login(config.smtp_email, config.smtp_password)
+                    server.send_message(msg)
+
+            return f"✅ Email sent via SMTP ({config.smtp_email}) to `{to}`!"
+        except Exception as e:
+            logger.error(f"SMTP send failed: {e}")
+            return f"❌ Failed to send email via SMTP: {e}"
+
+    # 3. Neither configured
+    return (
+        f"❌ Cannot send email to {to}: Neither Google OAuth nor SMTP is configured in `.env`.\n\n"
+        "**To enable email sending in 15 seconds**:\n"
+        "Add to your `.env` file:\n"
+        "```env\n"
+        "SMTP_EMAIL=your_email@gmail.com\n"
+        "SMTP_PASSWORD=your_16_char_google_app_password\n"
+        "```\n"
+        "*(Generate an App Password at: https://myaccount.google.com/apppasswords)*"
+    )
 
 
 # Register approvable action
