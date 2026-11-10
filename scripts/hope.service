@@ -1,0 +1,21 @@
+[Unit]
+Description=Hope UltraLight — Autonomous Personal Executive AI Agent
+After=network.target
+
+[Service]
+Type=simple
+User=%I
+WorkingDirectory=/home/%I/Hope
+ExecStart=/home/%I/Hope/venv/bin/python bot.py
+Restart=always
+RestartSec=5
+EnvironmentFile=/home/%I/Hope/.env
+
+# Security sandbox
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/%I/Hope/workspace
+
+[Install]
+WantedBy=multi-user.target
+

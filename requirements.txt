@@ -1,0 +1,19 @@
+# Core Telegram & Async Runtime
+python-telegram-bot[job-queue]>=21.0
+httpx>=0.27.0
+python-dotenv>=1.0.1
+pydantic>=2.7.0
+
+# Web Search & Content Extraction (Ultra-lightweight, ~20MB RAM)
+duckduckgo-search>=6.0.0
+trafilatura>=1.8.0
+beautifulsoup4>=4.12.0
+
+# Scheduling & Automation
+apscheduler>=3.10.4
+
+# Google Ecosystem (Unified OAuth for Gmail, Calendar, Sheets)
+google-api-python-client>=2.120.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.0
+

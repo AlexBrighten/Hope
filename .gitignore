@@ -1,0 +1,24 @@
+# Virtual environment
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Environment variables & secrets
+.env
+credentials.json
+token.json
+
+# Workspace runtime data & SQLite database
+workspace/
+*.db
+*.db-journal
+*.log
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
