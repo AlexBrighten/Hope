@@ -22,6 +22,7 @@ class RouteDecision:
 PRIVATE_PATTERNS = [
     r"\b(email|emails|gmail|mail|inbox|unread|draft|drafts|send\s+email|reply\s+email)\b",
     r"\b(calendar|schedule|reminder|remind|meeting|meetings|appointment|events?|reschedule)\b",
+    r"\b(task|todo|to-do|follow[- ]?up|deadline|due|finish|complete|cancel)\b",
     r"\b(remember\s+that|my\s+preference|my\s+favorite|my\s+phone|my\s+address|my\s+password|who\s+am\s+i)\b",
     r"\b(workspace[/\\]|my\s+notes|personal\s+note|my\s+secret)\b"
 ]
@@ -78,6 +79,8 @@ class Router:
                 cat = "mail"
             elif any(k in q_lower for k in ["calendar", "schedule", "reminder", "remind", "meeting", "event", "appointment"]):
                 cat = "calendar"
+            elif any(k in q_lower for k in ["task", "todo", "to-do", "follow-up", "deadline", "due"]):
+                cat = "tasks"
             elif any(k in q_lower for k in ["remember", "memory", "recall", "note"]):
                 cat = "memory"
             else:

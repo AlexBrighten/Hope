@@ -1,4 +1,4 @@
-# 🌟 E.D.I.T.H. — Hope UltraLight Personal Executive AI Agent
+# 🌟 Hope UltraLight — Personal Executive AI Agent
 
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -8,7 +8,7 @@
 [![Privacy First](https://img.shields.io/badge/Privacy-Hard_Local_Partition-success?style=flat)](#️-privacy-boundaries--human-in-the-loop-safeguards)
 [![Zero Cloud Cost](https://img.shields.io/badge/Cloud_Cost-$0.00_Free_Tiers-brightgreen?style=flat)](#-cost--resource-efficiency)
 
-**E.D.I.T.H.** is the calm, discreet personality layer for Hope UltraLight: a lean, single-process, privacy-conscious personal executive AI agent built on a **3-Tier Brain Architecture** and operated entirely through **Telegram**.
+**Hope** is a calm, discreet personal executive AI agent: a lean, single-process, privacy-conscious system built on a **3-Tier Brain Architecture** and operated entirely through **Telegram**.
 
 Designed specifically to run 24/7 on edge hardware (such as an old laptop or low-power mini-PC), Hope manages your schedule, monitors and drafts emails, conducts deep public research, records enduring memory, and executes routines without requiring bulky browser runtimes, paid cloud subscriptions, or exposed public network ports.
 
@@ -123,6 +123,7 @@ Hope UltraLight includes an asynchronous tool suite designed for sub-second exec
 | **📊 Google Sheets** | `sheet_append` | Append rows to Google Sheets for automated CRM tracking, lead capture, founder research logs, or meeting minutes. |
 | **🐙 GitHub** | `gh_issues`<br/>`gh_read_file` | Read open issues and pull requests, inspect repository source files, and review codebases with token-based access and repository whitelisting. |
 | **🧠 SQLite Second Brain** | `remember`<br/>`recall` | Store enduring facts and preferences into SQLite with auto-categorization. Exported automatically to human-readable `workspace/memory.md`. |
+| **✅ Tasks & Reminders** | `create_task`<br/>`list_tasks`<br/>`complete_task`<br/>`cancel_task` | Persist follow-ups locally in SQLite and receive one-shot Telegram reminders when they become due. |
 | **🎙️ Voice Notes** | Gemini Audio API | Send a Telegram voice memo from your phone. Gemini transcribes the audio in seconds, and Hope executes the instruction immediately. |
 
 ---
@@ -408,6 +409,7 @@ Diagnostics complete! Run 'python bot.py' to launch Hope UltraLight.
 | `/status` | — | Real-time health report for all 3 tiers, Ollama status, and daily quota consumption. |
 | `/brief` | — | Triggers an immediate executive morning briefing compilation. |
 | `/mem` | — | Dumps current long-term memory notes stored in SQLite. |
+| Natural language | — | Say “remind me”, “add a task”, “what are my tasks?”, or “mark task ... complete”. |
 | `/deep <prompt>` | `<prompt>` | Forces Tier 2 OpenRouter execution with `reasoning_effort="high"` for complex code or logic. |
 | `/local <prompt>` | `<prompt>` | Forces Tier 1 local Ollama execution (0 cloud tokens, 100% offline). |
 | `/free <prompt>` | `<prompt>` | Forces Tier 2 OpenRouter Inkling 2 Small Free execution. |

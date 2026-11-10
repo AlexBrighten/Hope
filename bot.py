@@ -19,7 +19,7 @@ from telegram.ext import (
 
 from config import config
 from database import db
-from brain.persona import EDIT_PERSONA
+from brain.persona import HOPE_PERSONA
 from brain.router import router, RouteDecision
 from brain.providers import provider_manager
 from tools.registry import get_contextual_tools, dispatch_tool_call
@@ -76,7 +76,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await unauthorized_warning(update)
 
     msg = (
-        "🌟 **E.D.I.T.H. Online**\n\n"
+        "🌟 **Hope Online**\n\n"
         "Your discreet personal executive AI is active and connected.\n\n"
         "**Available Commands:**\n"
         "• `/status` — System health, brain status & quota usage\n"
@@ -106,7 +106,7 @@ async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ol_usage = db.get_provider_usage_today("ollama")
 
     status_text = (
-        "📊 **E.D.I.T.H. Health & Quota Report**\n\n"
+        "📊 **Hope Health & Quota Report**\n\n"
         f"🧠 **Tier 1: Local Ollama (`{config.ollama_model}`)**\n"
         f"• Status: {'🟢 Online' if ollama_health.get('online') else '🔴 Offline'}\n"
         f"• Model Installed: {'✅ Yes' if ollama_health.get('installed') else '⚠️ Not Found'}\n"
@@ -172,12 +172,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.add_conversation_message(str(chat_id), "user", route.cleaned_query)
 
     system_prompt = (
-        f"{EDIT_PERSONA} "
+        f"{HOPE_PERSONA} "
         f"The current local date and time is {datetime.now().astimezone().isoformat()}. "
         "You have access to tools. Use them whenever the user asks you to inspect or "
         "change their calendar, reminders, email, research, leads, or memory. "
         "For calendar reminders, create a calendar event with a sensible duration; "
         "ask one concise clarification only when the date or time is genuinely missing. "
+        "For personal follow-ups and reminders, use the task tools; convert relative "
+        "times to ISO-8601 using the current local time. "
         "For email, draft or send through Gmail rather than claiming you cannot. "
         "Sending email may require the user's approval button. Never say a capability "
         "is unavailable before attempting the relevant tool."

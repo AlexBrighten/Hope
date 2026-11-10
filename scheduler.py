@@ -10,7 +10,7 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from config import config
 from database import db
-from brain.persona import EDIT_PERSONA
+from brain.persona import HOPE_PERSONA
 from brain.local_brain import local_brain
 from tools.calendar import cal_list
 from tools.gmail import mail_search
@@ -49,7 +49,7 @@ class HopeScheduler:
 
             # 2. Local distillation
             prompt = (
-                f"You are E.D.I.T.H., preparing a concise executive briefing. "
+                f"You are Hope, preparing a concise executive briefing. "
                 f"Create a concise, motivating executive morning briefing for the owner today ({datetime.now().strftime('%A, %B %d')}).\n\n"
                 f"Schedule:\n{cal_summary}\n\n"
                 f"Unread Emails:\n{inbox_summary}\n\n"
@@ -58,13 +58,13 @@ class HopeScheduler:
 
             res = await local_brain.chat(
                 messages=[{"role": "user", "content": prompt}],
-                system_prompt=EDIT_PERSONA
+                system_prompt=HOPE_PERSONA
             )
             briefing_text = res.get("content", "")
             if not briefing_text:
                 briefing_text = f"☀️ **Good Morning! Here is your agenda:**\n\n{cal_summary}\n\n{inbox_summary}"
 
-            await self.send_telegram_alert(f"☀️ **E.D.I.T.H. Executive Briefing**\n\n{briefing_text}")
+            await self.send_telegram_alert(f"☀️ **Hope Executive Briefing**\n\n{briefing_text}")
         except Exception as e:
             logger.error(f"Morning briefing failed: {e}")
 
@@ -92,9 +92,21 @@ class HopeScheduler:
         for query in config.autonomous_research_queries:
             try:
                 findings = await deep_research(query)
-                await self.send_telegram_alert(f"🔎 **E.D.I.T.H. Research Watch**\n\n{findings[:3800]}")
+                await self.send_telegram_alert(f"🔎 **Hope Research Watch**\n\n{findings[:3800]}")
             except Exception as e:
                 logger.error("Autonomous research failed for %r: %s", query, e)
+
+    async def task_reminder_job(self):
+        """Deliver each due task reminder once."""
+        for task in db.get_due_tasks():
+            if not db.mark_task_reminded(task["id"]):
+                continue
+            details = f"\n{task['description']}" if task["description"] else ""
+            await self.send_telegram_alert(
+                f"⏰ **Task reminder**\n\n"
+                f"**{task['title']}** ({task['priority']} priority){details}\n\n"
+                f"Task ID: `{task['id']}`"
+            )
 
     def start(self):
         """Register jobs and start scheduler."""
@@ -129,6 +141,12 @@ class HopeScheduler:
                 id="autonomous_research",
                 replace_existing=True
             )
+        self.scheduler.add_job(
+            self.task_reminder_job,
+            IntervalTrigger(minutes=1),
+            id="task_reminders",
+            replace_existing=True
+        )
 
         self.scheduler.start()
         logger.info("Hope Scheduler started (Morning briefing, inbox triage, memory distill registered).")

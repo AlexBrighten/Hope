@@ -3,7 +3,8 @@
 import unittest
 import asyncio
 from tools.registry import get_contextual_tools, dispatch_tool_call
-from tools.memory import remember, recall
+from tools.memory import remember, recall, create_task, list_tasks, complete_task
+from database import db
 
 
 class TestTools(unittest.TestCase):
@@ -42,6 +43,12 @@ class TestTools(unittest.TestCase):
         """Dispatching tool call directly executes the registered Python function."""
         res = asyncio.run(dispatch_tool_call("recall", {"query": "office_location"}))
         self.assertIn("Floor 4, Tower B", res)
+
+    def test_task_persistence(self):
+        asyncio.run(create_task("Follow up with recruiter", priority="high"))
+        task_id = db.list_tasks()[0]["id"]
+        self.assertIn(task_id, asyncio.run(list_tasks()))
+        self.assertIn("Completed", asyncio.run(complete_task(task_id)))
 
 
 if __name__ == "__main__":

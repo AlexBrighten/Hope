@@ -31,6 +31,7 @@ class TestRouter(unittest.TestCase):
             ("Remind me tomorrow at 9am", "calendar"),
             ("Please reschedule my meeting at 3pm", "calendar"),
             ("Remember that my favorite coffee is espresso", "memory"),
+            ("Add a task to call the recruiter", "tasks"),
             ("Search my inbox for receipt", "mail")
         ]
         for query, expected_cat in private_queries:

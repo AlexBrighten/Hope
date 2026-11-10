@@ -4,6 +4,7 @@ Handles usage quotas, response caching, memory notes, and pending human approval
 
 import sqlite3
 import json
+import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any, List
@@ -58,6 +59,23 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
 
 CREATE INDEX IF NOT EXISTS idx_conversation_messages_chat
 ON conversation_messages (chat_id, id);
+
+-- 6. Persistent tasks and reminders
+CREATE TABLE IF NOT EXISTS tasks (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT DEFAULT '',
+    due_at TEXT,
+    priority TEXT DEFAULT 'medium',
+    status TEXT DEFAULT 'pending',
+    reminder_sent INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_due
+ON tasks (status, due_at, reminder_sent);
 """
 
 
@@ -269,6 +287,78 @@ class DatabaseManager:
             {"role": row["role"], "content": row["content"]}
             for row in reversed(rows)
         ]
+
+    # --------------------------------------------------------------------------
+    # Tasks & Reminders
+    # --------------------------------------------------------------------------
+    def create_task(
+        self,
+        title: str,
+        description: str = "",
+        due_at: Optional[str] = None,
+        priority: str = "medium",
+    ) -> str:
+        task_id = str(uuid.uuid4())
+        with self._get_connection() as conn:
+            conn.execute(
+                """
+                INSERT INTO tasks (id, title, description, due_at, priority)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (task_id, title.strip(), description.strip(), due_at, priority.lower())
+            )
+        return task_id
+
+    def list_tasks(self, status: str = "pending", limit: int = 20) -> List[Dict[str, Any]]:
+        query = """
+            SELECT id, title, description, due_at, priority, status, created_at
+            FROM tasks
+        """
+        params: List[Any] = []
+        if status != "all":
+            query += " WHERE status = ?"
+            params.append(status)
+        query += " ORDER BY CASE WHEN due_at IS NULL THEN 1 ELSE 0 END, due_at, created_at LIMIT ?"
+        params.append(limit)
+        with self._get_connection() as conn:
+            rows = conn.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def update_task_status(self, task_id: str, status: str) -> bool:
+        completed_at = datetime.now(timezone.utc).isoformat() if status == "completed" else None
+        with self._get_connection() as conn:
+            cur = conn.execute(
+                """
+                UPDATE tasks
+                SET status = ?, completed_at = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND status NOT IN ('completed', 'cancelled')
+                """,
+                (status, completed_at, task_id)
+            )
+            return cur.rowcount > 0
+
+    def get_due_tasks(self, now_iso: Optional[str] = None) -> List[Dict[str, Any]]:
+        now_iso = now_iso or datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                """
+                SELECT id, title, description, due_at, priority
+                FROM tasks
+                WHERE status = 'pending' AND due_at IS NOT NULL
+                  AND due_at <= ? AND reminder_sent = 0
+                ORDER BY due_at
+                """,
+                (now_iso,)
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def mark_task_reminded(self, task_id: str) -> bool:
+        with self._get_connection() as conn:
+            cur = conn.execute(
+                "UPDATE tasks SET reminder_sent = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND reminder_sent = 0",
+                (task_id,)
+            )
+            return cur.rowcount > 0
 
 
 # Global singleton instance

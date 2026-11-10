@@ -5,7 +5,7 @@ Supplies only 3 to 6 compact tool schemas per turn, keeping CPU prompt prefill u
 import logging
 from typing import Dict, Any, List, Callable, Optional, Tuple
 from tools.web import web_search, fetch_page, summarize_url, company_brief, deep_research, find_job_leads
-from tools.memory import remember, recall
+from tools.memory import remember, recall, create_task, list_tasks, complete_task, cancel_task
 from tools.gmail import mail_search, mail_read, mail_draft, mail_send
 from tools.calendar import cal_list, cal_add, cal_delete
 from tools.sheets import sheet_append
@@ -125,6 +125,65 @@ TOOL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                 "properties": {
                     "query": {"type": "string", "description": "Optional search filter"}
                 }
+            }
+        }
+    },
+    "create_task": {
+        "function": create_task,
+        "category": "tasks",
+        "schema": {
+            "name": "create_task",
+            "description": "Create a persistent task, optionally with an ISO-8601 due datetime.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Short task title"},
+                    "description": {"type": "string", "description": "Optional task details"},
+                    "due_at": {"type": "string", "description": "Optional ISO-8601 due datetime with timezone"},
+                    "priority": {"type": "string", "description": "low, medium, or high"}
+                },
+                "required": ["title"]
+            }
+        }
+    },
+    "list_tasks": {
+        "function": list_tasks,
+        "category": "tasks",
+        "schema": {
+            "name": "list_tasks",
+            "description": "List persistent tasks.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string", "description": "pending, completed, cancelled, or all"},
+                    "limit": {"type": "integer", "description": "Maximum tasks to return"}
+                }
+            }
+        }
+    },
+    "complete_task": {
+        "function": complete_task,
+        "category": "tasks",
+        "schema": {
+            "name": "complete_task",
+            "description": "Mark a persistent task complete.",
+            "parameters": {
+                "type": "object",
+                "properties": {"task_id": {"type": "string", "description": "Task ID"}},
+                "required": ["task_id"]
+            }
+        }
+    },
+    "cancel_task": {
+        "function": cancel_task,
+        "category": "tasks",
+        "schema": {
+            "name": "cancel_task",
+            "description": "Cancel a persistent task.",
+            "parameters": {
+                "type": "object",
+                "properties": {"task_id": {"type": "string", "description": "Task ID"}},
+                "required": ["task_id"]
             }
         }
     },
@@ -317,6 +376,8 @@ def get_contextual_tools(category: Optional[str] = None) -> List[Dict[str, Any]]
         keys = ["sheet_append", "web_search"]
     elif category == "memory":
         keys = ["remember", "recall"]
+    elif category == "tasks":
+        keys = ["create_task", "list_tasks", "complete_task", "cancel_task"]
     else:
         # Default lightweight general tools
         keys = ["web_search", "company_brief", "remember", "recall"]
