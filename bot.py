@@ -315,6 +315,7 @@ def main():
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("brief", cmd_brief))
     app.add_handler(CommandHandler("mem", cmd_mem))
+    app.add_handler(CommandHandler(["deep", "local", "free", "gemini"], handle_message))
 
     # Catch-all text messages and slash overrides
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
