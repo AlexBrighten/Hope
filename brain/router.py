@@ -59,6 +59,9 @@ class Router:
         if query.startswith("/radar"):
             return RouteDecision(tier=2, is_private=False, reason="manual_override_radar", tool_category="research", reasoning_effort="low", cleaned_query="Fetch the latest tech radar")
 
+        if query.startswith("/persona"):
+            return RouteDecision(tier=1, is_private=False, reason="manual_override_persona", tool_category=None, reasoning_effort="low", cleaned_query=query)
+
         if query.startswith("/local"):
             cleaned = query[6:].strip()
             return RouteDecision(tier=1, is_private=True, reason="manual_override_local", tool_category=None, reasoning_effort="low", cleaned_query=cleaned)

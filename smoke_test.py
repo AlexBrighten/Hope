@@ -26,8 +26,11 @@ async def run_diagnostics():
     # 1. Database Check
     print("\n[1/7] Checking SQLite Database...")
     try:
+        from brain.persona import get_active_persona_name, PERSONA_DEFINITIONS, get_user_title
         usage = db.get_provider_usage_today("test")
+        active_p = get_active_persona_name()
         print(f"  ✅ SQLite database operational: {config.database_path}")
+        print(f"  🎭 Active Persona: {PERSONA_DEFINITIONS[active_p]['name']} (Addressing you as '{get_user_title()}')")
     except Exception as e:
         print(f"  ❌ Database check failed: {e}")
 

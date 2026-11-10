@@ -419,7 +419,8 @@ Diagnostics complete! Run 'python bot.py' to launch Hope UltraLight.
 | `/status` | — | Real-time health report for all 3 tiers, Ollama status, and daily quota consumption. |
 | `/brief` | — | Triggers an immediate executive morning briefing (schedule + unread emails + tech radar). |
 | `/mem` | — | Dumps current long-term memory notes stored in SQLite. |
-| Natural language | — | Say “remind me”, “how is my laptop doing?”, “add a task”, or “what's on my calendar?”. |
+| `/persona [name]` | `jarvis` / `edith` / `friday` / `classic` | **Personality Matrix**: Inspect or switch between J.A.R.V.I.S., E.D.I.T.H., F.R.I.D.A.Y., and Classic personas on the fly. |
+| Natural language | — | Say “remind me”, “how is my laptop doing, Jarvis?”, “add a task”, or “what's on my calendar?”. |
 | `/deep <prompt>` | `<prompt>` | Forces Tier 2 OpenRouter execution with `reasoning_effort="high"` for complex code or logic. |
 | `/local <prompt>` | `<prompt>` | Forces Tier 1 local Ollama execution (0 cloud tokens, 100% offline). |
 | `/free <prompt>` | `<prompt>` | Forces Tier 2 OpenRouter Inkling 2 Small Free execution. |
@@ -470,6 +471,20 @@ Diagnostics complete! Run 'python bot.py' to launch Hope UltraLight.
 #### 5. Long-Term Memory Notes
 > **User**: "Remember that the wifi password for the guest room is Sunrise42"  
 > **Hope**: "🧠 Saved to long-term memory under `wifi_guest`."
+
+#### 6. J.A.R.V.I.S. & E.D.I.T.H. Persona Modes
+> **User**: `/persona edith`  
+> **Hope**: "🎭 **Personality Matrix Reconfigured: E.D.I.T.H.**  
+> _Even Dead, I'm The Hero_  
+> \"E.D.I.T.H. online. Tactical feeds synchronized, host telemetry nominal. Awaiting mission parameters, Sir.\""
+
+> **User**: "Give me a hardware scan"  
+> **Hope**: *(In J.A.R.V.I.S. mode)*  
+> "💻 **J.A.R.V.I.S. Hardware Telemetry**  
+> _Diagnostic report for Sir. Silicon and resource status:_  
+> ⚡ **CPU Usage**: 🟢 `18%` (8 logical cores)  
+> 🧠 **RAM Usage**: 🔴 `7.2 GB` / `7.75 GB` (`93%`)  
+> _A rather tight fit for your physical silicon, Sir. Chrome appears to be consuming an unseemly share. Shall I purge temporary artifacts?_"
 
 ---
 

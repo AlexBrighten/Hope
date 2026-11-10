@@ -53,7 +53,7 @@ class TestTools(unittest.TestCase):
     def test_system_stats_tool(self):
         """PC hardware butler must gather stats and format cleanly."""
         res = asyncio.run(dispatch_tool_call("pc_status", {}))
-        self.assertIn("Potato PC Hardware Status", res)
+        self.assertIn("Hardware", res)
         self.assertIn("CPU Usage", res)
         self.assertIn("RAM Usage", res)
 
@@ -63,6 +63,19 @@ class TestTools(unittest.TestCase):
         names = [t["function"]["name"] for t in sys_tools]
         self.assertIn("pc_status", names)
         self.assertIn("clean_temp", names)
+
+    def test_persona_engine(self):
+        """Persona engine must support dynamic switching between JARVIS, EDITH, etc."""
+        from brain.persona import set_active_persona, get_active_persona_name, get_persona_greeting, get_system_persona
+
+        self.assertTrue(set_active_persona("edith"))
+        self.assertEqual(get_active_persona_name(), "edith")
+        self.assertIn("E.D.I.T.H.", get_persona_greeting())
+        self.assertIn("E.D.I.T.H.", get_system_persona())
+
+        self.assertTrue(set_active_persona("jarvis"))
+        self.assertEqual(get_active_persona_name(), "jarvis")
+        self.assertIn("J.A.R.V.I.S.", get_system_persona())
 
 
 if __name__ == "__main__":

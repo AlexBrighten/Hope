@@ -19,7 +19,13 @@ from telegram.ext import (
 
 from config import config
 from database import db
-from brain.persona import HOPE_PERSONA
+from brain.persona import (
+    HOPE_PERSONA,
+    get_active_persona_name,
+    set_active_persona,
+    get_persona_greeting,
+    PERSONA_DEFINITIONS,
+)
 from brain.router import router, RouteDecision
 from brain.providers import provider_manager
 from tools.registry import get_contextual_tools, dispatch_tool_call
@@ -79,27 +85,66 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
         return await unauthorized_warning(update)
 
+    active_key = get_active_persona_name()
+    active_name = PERSONA_DEFINITIONS.get(active_key, {}).get("name", "J.A.R.V.I.S.")
+    greeting = get_persona_greeting()
+
     msg = (
-        "🌟 **Hope — Personal AI Executive & Laptop Butler**\n\n"
-        "Active, autonomous, and running right on your PC.\n\n"
-        "**💻 Potato PC Butler:**\n"
-        "• `/pc` — Hardware health (CPU, RAM, Battery, Disks, Top Memory Hogs)\n"
-        "• `/clean` — Safely clear temporary files to free disk space\n\n"
-        "**🌐 Intelligence & Research:**\n"
+        f"🌟 **{active_name} Online**\n"
+        f"_{greeting}_\n\n"
+        "**💻 Hardware & System Butler:**\n"
+        "• `/pc` — Hardware telemetry (CPU, RAM, Battery, Disks, Top Memory Hogs)\n"
+        "• `/clean` — Safely clear temporary files to reclaim disk space\n\n"
+        "**🌐 Intelligence & Reconnaissance:**\n"
         "• `/research <topic>` — Autonomous multi-page deep research dossier\n"
         "• `/radar` — Live Tech Radar (Hacker News top stories & GitHub trending)\n"
         "• `/deep <prompt>` — Deep reasoning mode via OpenRouter\n\n"
-        "**✉️ Communications & Schedule:**\n"
+        "**✉️ Transmissions & Schedule:**\n"
         "• `/mail <to> | <subject> | <body>` — Instant email composer with approval\n"
-        "• `/brief` — Today's executive agenda + morning brief\n"
-        "• `/mem` — View persistent second brain notes\n\n"
-        "**⚙️ Controls & Overrides:**\n"
-        "• `/status` — System health, brain tiers & quota usage\n"
-        "• `/local <query>` — Force local Ollama (0 cloud tokens)\n"
-        "• `/gemini <query>` — Force Gemini Flash\n\n"
-        "_Tip: Ask me anything naturally, e.g. 'How much RAM is Chrome using?' or 'Research Cursor AI vs Windsurf'!_"
+        "• `/brief` — Today's executive morning briefing & agenda\n"
+        "• `/mem` — Persistent second brain memory\n\n"
+        "**🎭 Persona & Customization:**\n"
+        "• `/persona` — Switch personality (`jarvis`, `edith`, `friday`, `classic`)\n"
+        "• `/status` — Brain tiers health & quota tracking\n\n"
+        "_Tip: Talk to me naturally, e.g. 'How is my laptop doing, Jarvis?' or 'Give me a brief on OpenAI'!_"
     )
     await safe_reply(update.message, msg)
+
+
+async def cmd_persona(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Inspect or dynamically switch active AI personality."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+
+    text = update.message.text or ""
+    parts = text.strip().split()
+    if len(parts) > 1:
+        target = parts[1].lower()
+        if target in PERSONA_DEFINITIONS:
+            set_active_persona(target)
+            defn = PERSONA_DEFINITIONS[target]
+            greeting = get_persona_greeting()
+            msg = (
+                f"🎭 **Personality Matrix Reconfigured: {defn['name']}**\n"
+                f"_{defn['tagline']}_\n\n"
+                f"\"{greeting}\""
+            )
+            return await safe_reply(update.message, msg)
+        else:
+            options = ", ".join(f"`{k}`" for k in PERSONA_DEFINITIONS.keys())
+            return await safe_reply(update.message, f"⚠️ Unknown persona '{target}'.\nAvailable: {options}")
+
+    active = get_active_persona_name()
+    lines = [
+        f"🎭 **Current Personality**: `{PERSONA_DEFINITIONS[active]['name']}` ({PERSONA_DEFINITIONS[active]['tagline']})\n",
+        "**Available Personas:**"
+    ]
+    for k, v in PERSONA_DEFINITIONS.items():
+        prefix = "👉 " if k == active else "• "
+        lines.append(f"{prefix}**{v['name']}** (`/persona {k}`)\n  _{v['description']}_")
+
+    lines.append("\n_Usage: `/persona jarvis` or `/persona edith` to switch instantly!_")
+    await safe_reply(update.message, "\n".join(lines))
 
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -428,6 +473,7 @@ def main():
     app.add_handler(CommandHandler("status", cmd_status))
     app.add_handler(CommandHandler("brief", cmd_brief))
     app.add_handler(CommandHandler("mem", cmd_mem))
+    app.add_handler(CommandHandler("persona", cmd_persona))
     app.add_handler(CommandHandler(["pc", "system"], cmd_pc))
     app.add_handler(CommandHandler("radar", cmd_radar))
     app.add_handler(CommandHandler("research", cmd_research))

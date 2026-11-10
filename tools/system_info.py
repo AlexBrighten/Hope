@@ -94,13 +94,29 @@ def get_pc_stats() -> Dict[str, Any]:
 def format_pc_report() -> str:
     """Format system metrics into a clear Telegram Markdown report."""
     stats = get_pc_stats()
+    try:
+        from brain.persona import get_active_persona_name, get_user_title
+        persona = get_active_persona_name()
+        title = get_user_title()
+    except Exception:
+        persona = "jarvis"
+        title = "Sir"
+
+    if persona == "jarvis":
+        header = f"💻 **J.A.R.V.I.S. Hardware Telemetry**\n_Diagnostic report for {title}. Silicon and resource status:_"
+    elif persona == "edith":
+        header = f"🛡️ **E.D.I.T.H. Tactical System Sweep**\n_Host integrity scan complete for {title}:_"
+    elif persona == "friday":
+        header = f"⚡ **F.R.I.D.A.Y. Diagnostics**\n_Here is how your machine is holding up, {title}:_"
+    else:
+        header = "💻 **Potato PC Hardware Status**"
 
     # CPU status emoji
     cpu_emoji = "🟢" if stats["cpu_percent"] < 60 else ("🟡" if stats["cpu_percent"] < 85 else "🔴")
     mem_emoji = "🟢" if stats["mem_percent"] < 75 else ("🟡" if stats["mem_percent"] < 90 else "🔴")
 
     lines = [
-        "💻 **Potato PC Hardware Status**",
+        header,
         f"⏱️ **Uptime**: `{stats['uptime']}`\n",
         f"⚡ **CPU Usage**: {cpu_emoji} `{stats['cpu_percent']}%` ({stats['cpu_cores']} logical cores)",
         f"🧠 **RAM Usage**: {mem_emoji} `{stats['mem_used_gb']} GB` / `{stats['mem_total_gb']} GB` (`{stats['mem_percent']}%`)",

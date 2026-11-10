@@ -64,6 +64,10 @@ class Config:
     )
     autonomous_research_interval_hours: int = int(os.getenv("AUTONOMOUS_RESEARCH_INTERVAL_HOURS", "6"))
 
+    # Persona & Title Settings
+    agent_persona: str = os.getenv("AGENT_PERSONA", "jarvis").strip().lower()
+    user_title: str = os.getenv("USER_TITLE", "Sir").strip()
+
     def is_telegram_ready(self) -> bool:
         return bool(self.telegram_bot_token and self.allowed_user_id)
 
