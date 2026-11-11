@@ -149,3 +149,4 @@ def search_files(query: str, root_dir: str = ".") -> str:
     except Exception as e:
         logger.error(f"Error searching files for '{query}': {e}")
         return f"❌ File search error: {e}"
+

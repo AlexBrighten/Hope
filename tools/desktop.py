@@ -116,3 +116,4 @@ def capture_screenshot(filename: str = "screenshot.png") -> str:
             pass
         logger.warning(f"Screenshot capture failed: {e}")
         return f"⚠️ Screenshot could not be captured in the current session: {e}"
+
