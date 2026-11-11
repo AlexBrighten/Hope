@@ -38,7 +38,13 @@ RESEARCH_PATTERNS = [
 
 # System & Hardware Butler keywords
 SYSTEM_PATTERNS = [
-    r"\b(pc|laptop|computer|battery|cpu|ram|memory\s+usage|disk|storage|hardware|clean\s+temp|temp\s+files)\b"
+    r"\b(pc|laptop|computer|battery|cpu|ram|memory\s+usage|disk|storage|hardware|clean\s+temp|temp\s+files)\b",
+    r"\b(terminal|shell|cmd|powershell|command|run\s+command|execute|script|process|kill|open\s+app|launch|screenshot|snap)\b"
+]
+
+# Filesystem keywords
+FILESYSTEM_PATTERNS = [
+    r"\b(file|files|folder|folders|directory|list\s+dir|read\s+file|write\s+file|search\s+file|find\s+file)\b"
 ]
 
 
@@ -47,12 +53,29 @@ class Router:
         self._private_regex = re.compile("|".join(PRIVATE_PATTERNS), re.IGNORECASE)
         self._research_regex = re.compile("|".join(RESEARCH_PATTERNS), re.IGNORECASE)
         self._system_regex = re.compile("|".join(SYSTEM_PATTERNS), re.IGNORECASE)
+        self._filesystem_regex = re.compile("|".join(FILESYSTEM_PATTERNS), re.IGNORECASE)
 
     def route(self, raw_query: str) -> RouteDecision:
         query = raw_query.strip()
         effort = "low"
 
         # 1. Slash command overrides
+        if query.startswith("/cmd ") or query.startswith("/sh "):
+            cleaned = query.split(" ", 1)[1].strip()
+            return RouteDecision(tier=1, is_private=False, reason="manual_override_cmd", tool_category="system", reasoning_effort="low", cleaned_query=f"Execute command: {cleaned}")
+
+        if query.startswith("/snap") or query.startswith("/screenshot"):
+            return RouteDecision(tier=1, is_private=False, reason="manual_override_screenshot", tool_category="system", reasoning_effort="low", cleaned_query="Capture a screenshot of the desktop screen")
+
+        if query.startswith("/ls") or query.startswith("/dir"):
+            parts = query.split(maxsplit=1)
+            target = parts[1].strip() if len(parts) > 1 else "."
+            return RouteDecision(tier=1, is_private=False, reason="manual_override_dir", tool_category="filesystem", reasoning_effort="low", cleaned_query=f"List directory contents of: {target}")
+
+        if query.startswith("/cat "):
+            target = query[5:].strip()
+            return RouteDecision(tier=1, is_private=False, reason="manual_override_cat", tool_category="filesystem", reasoning_effort="low", cleaned_query=f"Read file: {target}")
+
         if query.startswith("/pc") or query.startswith("/system"):
             return RouteDecision(tier=1, is_private=False, reason="manual_override_system", tool_category="system", reasoning_effort="low", cleaned_query="Report the current PC hardware and resource status")
 
@@ -132,7 +155,18 @@ class Router:
                 cleaned_query=query
             )
 
-        # 5. Short conversational chat, greetings, definitions, time -> Tier 1 (Local Ollama)
+        # 5. Filesystem Operations (list dir, read file, write file, search files)
+        if self._filesystem_regex.search(query):
+            return RouteDecision(
+                tier=1,
+                is_private=False,
+                reason="filesystem_operations",
+                tool_category="filesystem",
+                reasoning_effort="low",
+                cleaned_query=query
+            )
+
+        # 6. Short conversational chat, greetings, definitions, time -> Tier 1 (Local Ollama)
         return RouteDecision(
             tier=1,
             is_private=False,

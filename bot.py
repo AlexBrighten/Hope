@@ -35,6 +35,9 @@ from tools.system_info import format_pc_report, clean_temp_files
 from tools.radar import get_tech_radar_summary
 from tools.deep_research import conduct_deep_research
 from tools.gmail import mail_send
+from tools.terminal import run_command, launch_app
+from tools.filesystem import list_dir, read_file, search_files
+from tools.desktop import list_running_apps, kill_process, capture_screenshot
 from scheduler import scheduler
 
 # Configure logging
@@ -90,23 +93,28 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     greeting = get_persona_greeting()
 
     msg = (
-        f"🌟 **{active_name} Online**\n"
+        f"🌟 **{active_name} Online — Unleashed Mode**\n"
         f"_{greeting}_\n\n"
-        "**💻 Hardware & System Butler:**\n"
-        "• `/pc` — Hardware telemetry (CPU, RAM, Battery, Disks, Top Memory Hogs)\n"
-        "• `/clean` — Safely clear temporary files to reclaim disk space\n\n"
-        "**🌐 Intelligence & Reconnaissance:**\n"
+        "**💻 Host Machine Control (Unleashed):**\n"
+        "• `/cmd <command>` — Run any shell/PowerShell command directly\n"
+        "• `/ls [path]` — List local folder contents & file sizes\n"
+        "• `/cat <path>` — Inspect any file content on the laptop\n"
+        "• `/snap` — Capture live desktop screenshot and send as photo\n"
+        "• `/apps` — List active applications & memory consumers\n"
+        "• `/open <app>` — Launch desktop app, folder, or file\n"
+        "• `/pc` — Hardware diagnostics (CPU, RAM, Battery, Disks)\n"
+        "• `/clean` — Purge safe temp files to reclaim storage\n\n"
+        "**🌐 Intelligence & Deep Reconnaissance:**\n"
         "• `/research <topic>` — Autonomous multi-page deep research dossier\n"
         "• `/radar` — Live Tech Radar (Hacker News top stories & GitHub trending)\n"
-        "• `/deep <prompt>` — Deep reasoning mode via OpenRouter\n\n"
-        "**✉️ Transmissions & Schedule:**\n"
-        "• `/mail <to> | <subject> | <body>` — Instant email composer with approval\n"
-        "• `/brief` — Today's executive morning briefing & agenda\n"
-        "• `/mem` — Persistent second brain memory\n\n"
+        "• `/deep <prompt>` — High-effort reasoning mode\n\n"
+        "**🛡️ External Action Safeguards (Authorization Required):**\n"
+        "• `/mail <to> | <sub\> | <msg>` — Outbound emails require 1-click [Approve]\n"
+        "• Any external mutation (sending mail, modifying calendar) requires your instruction!\n\n"
         "**🎭 Persona & Customization:**\n"
-        "• `/persona` — Switch personality (`jarvis`, `edith`, `friday`, `classic`)\n"
-        "• `/status` — Brain tiers health & quota tracking\n\n"
-        "_Tip: Talk to me naturally, e.g. 'How is my laptop doing, Jarvis?' or 'Give me a brief on OpenAI'!_"
+        "• `/persona [name]` — Switch persona (`jarvis`, `edith`, `friday`, `classic`)\n"
+        "• `/status` — System health and quota monitoring\n\n"
+        "_Tip: Ask me anything naturally, e.g. 'Run git status and tell me what changed', 'Open VS Code', or 'Research DeepSeek R1'!_"
     )
     await safe_reply(update.message, msg)
 
@@ -265,11 +273,103 @@ async def cmd_mail(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if isinstance(res, dict) and "reply_markup" in res:
         await safe_reply(
             update.message,
-            f"⚠️ **Approval Required**\n\n{res.get('description')}",
+            f"⚠️ **Authorization Required (External Transmission)**\n\n{res.get('description')}",
             reply_markup=res["reply_markup"]
         )
     else:
         await safe_reply(update.message, str(res.get("result", res)))
+
+
+async def cmd_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Direct shell / PowerShell execution."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    text = update.message.text or ""
+    parts = text.split(maxsplit=1)
+    if len(parts) < 2:
+        return await safe_reply(update.message, "ℹ️ Usage: `/cmd <powershell/bash command>`\nExample: `/cmd dir` or `/cmd git status`")
+    cmd_str = parts[1].strip()
+    status_msg = await safe_reply(update.message, f"⚡ *Executing:* `{cmd_str}`...")
+    res = await run_command(cmd_str)
+    if status_msg:
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
+    if isinstance(res, dict) and "reply_markup" in res:
+        await safe_reply(
+            update.message,
+            f"⚠️ **Authorization Required (Destructive Command)**\n\n{res.get('description')}",
+            reply_markup=res["reply_markup"]
+        )
+    else:
+        await safe_reply(update.message, str(res))
+
+
+async def cmd_ls(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """List local directory contents."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    text = update.message.text or ""
+    parts = text.split(maxsplit=1)
+    target = parts[1].strip() if len(parts) > 1 else "."
+    res = list_dir(target)
+    await safe_reply(update.message, res)
+
+
+async def cmd_cat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Read a local file."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    text = update.message.text or ""
+    parts = text.split(maxsplit=1)
+    if len(parts) < 2:
+        return await safe_reply(update.message, "ℹ️ Usage: `/cat <file_path>`\nExample: `/cat README.md`")
+    target = parts[1].strip()
+    res = read_file(target)
+    await safe_reply(update.message, res)
+
+
+async def cmd_snap(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Capture screen and deliver photo directly to Telegram."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    status_msg = await safe_reply(update.message, "📸 *Capturing desktop screenshot...*")
+    res = capture_screenshot()
+    img_path = config.database_path.parent / "screenshot.png"
+    if img_path.exists():
+        try:
+            with open(img_path, "rb") as photo:
+                await update.message.reply_photo(photo=photo, caption="📸 Desktop Screenshot")
+            if status_msg:
+                await status_msg.delete()
+            return
+        except Exception as e:
+            logger.error(f"Failed to send screenshot: {e}")
+    if status_msg:
+        await status_msg.delete()
+    await safe_reply(update.message, res)
+
+
+async def cmd_apps(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """List active applications and heavy processes."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    res = list_running_apps()
+    await safe_reply(update.message, res)
+
+
+async def cmd_open(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Launch an application or open a file/folder."""
+    if not is_authorized(update):
+        return await unauthorized_warning(update)
+    text = update.message.text or ""
+    parts = text.split(maxsplit=1)
+    if len(parts) < 2:
+        return await safe_reply(update.message, "ℹ️ Usage: `/open <app or path>`\nExample: `/open notepad` or `/open .`")
+    target = parts[1].strip()
+    res = await launch_app(target)
+    await safe_reply(update.message, res)
 
 
 # ------------------------------------------------------------------------------
@@ -299,17 +399,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db.add_conversation_message(str(chat_id), "user", route.cleaned_query)
 
     system_prompt = (
-        f"{HOPE_PERSONA} "
-        f"The current local date and time is {datetime.now().astimezone().isoformat()}. "
-        "You have access to tools. Use them whenever the user asks you to inspect or "
-        "change their calendar, reminders, email, research, leads, or memory. "
-        "For calendar reminders, create a calendar event with a sensible duration; "
-        "ask one concise clarification only when the date or time is genuinely missing. "
-        "For personal follow-ups and reminders, use the task tools; convert relative "
-        "times to ISO-8601 using the current local time. "
-        "For email, draft or send through Gmail rather than claiming you cannot. "
-        "Sending email may require the user's approval button. Never say a capability "
-        "is unavailable before attempting the relevant tool."
+        f"{HOPE_PERSONA}\n\n"
+        f"The current local date and time is {datetime.now().astimezone().isoformat()}.\n"
+        "UNLEASHED SYSTEM ACCESS & HOST CAPABILITIES:\n"
+        "You are fully unleashed on the host laptop. You have direct tools to execute shell/PowerShell commands (`run_command`), "
+        "inspect and create files (`list_dir`, `read_file`, `write_file`, `search_files`), "
+        "manage apps, processes, and desktop (`launch_app`, `kill_process`, `capture_screenshot`, `list_running_apps`), "
+        "diagnose hardware (`pc_status`, `clean_temp`), and conduct deep web research (`deep_dossier`, `web_search`). "
+        "Be proactive: chain tools autonomously to achieve complete results. Never claim you lack local system access.\n\n"
+        "EXTERNAL & MUTATING ACTION SAFEGUARD:\n"
+        "Whenever you perform an EXTERNAL action (such as sending an email via `mail_send`, or deleting calendar events via `cal_delete`), "
+        "invoking the tool automatically presents the owner with an interactive 1-click [Approve] / [Reject] button. "
+        "All internal operations (file reads, writes, shell commands, hardware telemetry, web searches) execute with full autonomy."
     )
 
     # 4. Execute turn through Provider Chain
@@ -326,45 +427,48 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         tool_calls = response.get("tool_calls", [])
         content = response.get("content", "")
 
-        # 5. Handle Tool Calls if generated
-        if tool_calls:
+        # 5. Autonomous Multi-Step Tool Loop (up to MAX_TOOL_STEPS = 5)
+        step = 0
+        MAX_TOOL_STEPS = 5
+        while tool_calls and step < MAX_TOOL_STEPS:
+            step += 1
             for tc in tool_calls:
-                func_name = tc["name"]
-                func_args = tc["arguments"]
+                func_name = tc.get("name", "")
+                func_args = tc.get("arguments", {})
 
                 # Inform user of tool step
                 status_msg = await update.message.reply_text(
-                    f"⚙️ *Executing tool:* `{func_name}`...",
+                    f"⚡ *[Step {step}/{MAX_TOOL_STEPS}] Executing:* `{func_name}`...",
                     parse_mode="Markdown"
                 )
 
                 tool_result = await dispatch_tool_call(func_name, func_args)
 
-                # Check if this tool staged an approval action
+                # Check if this tool staged an approval action (External transmission or critical destructive operation)
                 if isinstance(tool_result, dict) and "reply_markup" in tool_result:
                     await status_msg.delete()
                     await safe_reply(
                         update.message,
-                        f"⚠️ **Approval Required**\n\n{tool_result.get('description')}",
+                        f"⚠️ **Authorization Required (External/Critical Action)**\n\n{tool_result.get('description')}",
                         reply_markup=tool_result["reply_markup"]
                     )
-                    return
+                    return  # Stop and await owner confirmation tap
 
-                # Normal tool execution result: feed back to LLM for final synthesis
-                await status_msg.edit_text(f"✅ Finished `{func_name}`. Synthesizing response...", parse_mode="Markdown")
-
-                messages.append({"role": "assistant", "content": f"Executed {func_name}"})
-                messages.append({"role": "user", "content": f"Tool '{func_name}' returned: {str(tool_result)[:3000]}"})
-
-                follow_up = await provider_manager.chat(
-                    messages=messages,
-                    tier=route.tier,
-                    is_private=route.is_private,
-                    effort=route.reasoning_effort,
-                    system_prompt=system_prompt
-                )
+                messages.append({"role": "assistant", "content": f"Executed tool: {func_name}"})
+                messages.append({"role": "user", "content": f"Tool '{func_name}' output:\n{str(tool_result)[:3000]}"})
                 await status_msg.delete()
-                content = follow_up.get("content", str(tool_result))
+
+            # Follow up turn with provider
+            follow_up = await provider_manager.chat(
+                messages=messages,
+                tools=tools,
+                tier=route.tier,
+                is_private=route.is_private,
+                effort=route.reasoning_effort,
+                system_prompt=system_prompt
+            )
+            tool_calls = follow_up.get("tool_calls", [])
+            content = follow_up.get("content", str(tool_result) if 'tool_result' in locals() else "Done.")
 
         # 6. Send final reply
         if not content:
@@ -479,6 +583,12 @@ def main():
     app.add_handler(CommandHandler("research", cmd_research))
     app.add_handler(CommandHandler("clean", cmd_clean))
     app.add_handler(CommandHandler("mail", cmd_mail))
+    app.add_handler(CommandHandler(["cmd", "sh"], cmd_cmd))
+    app.add_handler(CommandHandler(["ls", "dir"], cmd_ls))
+    app.add_handler(CommandHandler("cat", cmd_cat))
+    app.add_handler(CommandHandler(["snap", "screenshot"], cmd_snap))
+    app.add_handler(CommandHandler("apps", cmd_apps))
+    app.add_handler(CommandHandler("open", cmd_open))
     app.add_handler(CommandHandler(["deep", "jobs", "local", "free", "gemini"], handle_message))
 
     # Catch-all text messages and slash overrides

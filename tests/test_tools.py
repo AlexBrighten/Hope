@@ -77,6 +77,55 @@ class TestTools(unittest.TestCase):
         self.assertEqual(get_active_persona_name(), "jarvis")
         self.assertIn("J.A.R.V.I.S.", get_system_persona())
 
+    def test_terminal_run_command(self):
+        """Shell execution tool must execute non-destructive commands autonomously."""
+        from tools.terminal import run_command
+        res = asyncio.run(run_command("python --version"))
+        self.assertIn("Python", str(res))
+        self.assertIn("Exit Code", str(res))
+
+    def test_terminal_destructive_staging(self):
+        """Destructive shell commands must be staged for user approval."""
+        from tools.terminal import run_command
+        res = asyncio.run(run_command("del /s /q dangerous_folder"))
+        self.assertIsInstance(res, dict)
+        self.assertIn("reply_markup", res)
+        self.assertIn("Authorization Required", res["description"])
+
+    def test_filesystem_operations(self):
+        """Filesystem tools must support listing, writing, reading, and searching."""
+        from tools.filesystem import write_file, read_file, list_dir, search_files
+        test_file = "workspace/test_unleashed.txt"
+        
+        # Write
+        write_res = write_file(test_file, "JARVIS unleashed operational test.")
+        self.assertIn("Successfully wrote", write_res)
+        
+        # Read
+        read_res = read_file(test_file)
+        self.assertIn("JARVIS unleashed", read_res)
+        
+        # List
+        list_res = list_dir("workspace")
+        self.assertIn("test_unleashed.txt", list_res)
+        
+        # Search
+        search_res = search_files("test_unleashed*", "workspace")
+        self.assertIn("test_unleashed.txt", search_res)
+
+        # Cleanup
+        try:
+            import os
+            os.remove(test_file)
+        except Exception:
+            pass
+
+    def test_desktop_kill_protected_process(self):
+        """Desktop process manager must protect critical system processes."""
+        from tools.desktop import kill_process
+        res = kill_process("explorer.exe")
+        self.assertIn("Cannot terminate critical", res)
+
 
 if __name__ == "__main__":
     unittest.main()

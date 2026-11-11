@@ -124,6 +124,9 @@ Hope UltraLight includes an asynchronous tool suite designed for sub-second exec
 | **🐙 GitHub** | `gh_issues`<br/>`gh_read_file` | Read open issues and pull requests, inspect repository source files, and review codebases with token-based access and repository whitelisting. |
 | **🧠 SQLite Second Brain** | `remember`<br/>`recall` | Store enduring facts and preferences into SQLite with auto-categorization. Exported automatically to human-readable `workspace/memory.md`. |
 | **✅ Tasks & Reminders** | `create_task`<br/>`list_tasks`<br/>`complete_task`<br/>`cancel_task` | Persist follow-ups locally in SQLite and receive one-shot Telegram reminders when they become due. |
+| **💻 Terminal & Shell (Unleashed)** | `run_command`<br/>`launch_app` | Execute PowerShell/Bash commands, compile code, run tests, and launch desktop apps autonomously. Destructive commands (`del /s`, `format`) stage for 1-click approval. |
+| **📂 Filesystem Explorer** | `list_dir`<br/>`read_file`<br/>`write_file`<br/>`search_files` | Full filesystem operations: list directories, read code/markdown, create/edit files, and recursively search files on the host machine. |
+| **🖥️ Desktop & Processes** | `list_running_apps`<br/>`kill_process`<br/>`capture_screenshot` | View active apps and heavy memory hogs, terminate unresponsive non-system processes, and capture desktop screenshots delivered directly to Telegram. |
 | **🎙️ Voice Notes** | Gemini Audio API | Send a Telegram voice memo from your phone. Gemini transcribes the audio in seconds, and Hope executes the instruction immediately. |
 
 ---
@@ -411,6 +414,12 @@ Diagnostics complete! Run 'python bot.py' to launch Hope UltraLight.
 | Command | Arguments | Description |
 | :--- | :--- | :--- |
 | `/start` or `/help` | — | Displays welcome banner and full command directory. |
+| `/cmd <command>` | `<command>` | **Unleashed Terminal**: Execute any PowerShell / Bash command directly on your laptop. |
+| `/ls [path]` | `[path]` | **Filesystem Browser**: List files, folders, and sizes in any directory. |
+| `/cat <path>` | `<path>` | **File Reader**: Inspect code, configuration, or text files directly. |
+| `/snap` | — | **Screen Capture**: Takes a desktop screenshot and delivers it as an image to Telegram. |
+| `/apps` | — | **Process Monitor**: Lists running interactive applications and top RAM consumers. |
+| `/open <target>` | `<target>` | **Desktop Launcher**: Opens an application, folder, or file on the host desktop. |
 | `/pc` or `/system` | — | **Potato PC Butler**: Real-time CPU, RAM, battery, disk space, and top memory-hogging processes. |
 | `/radar` | — | **Live Tech Radar**: Top Hacker News engineering discussions & trending GitHub repositories. |
 | `/research <topic>` | `<topic>` | **Autonomous Deep Research**: Multi-step deep search & scraping, compiles an executive dossier to `workspace/reports/`. |

@@ -15,6 +15,9 @@ from tools.github import gh_issues, gh_read_file
 from tools.system_info import format_pc_report, clean_temp_files
 from tools.radar import get_tech_radar_summary
 from tools.deep_research import conduct_deep_research
+from tools.terminal import run_command, launch_app
+from tools.filesystem import list_dir, read_file, write_file, search_files
+from tools.desktop import list_running_apps, kill_process, capture_screenshot
 
 logger = logging.getLogger(__name__)
 
@@ -422,12 +425,149 @@ TOOL_DEFINITIONS: Dict[str, Dict[str, Any]] = {
                 "required": ["topic"]
             }
         }
+    },
+
+    # Terminal & OS Execution tools (Unleashed!)
+    "run_command": {
+        "function": run_command,
+        "category": "system",
+        "schema": {
+            "name": "run_command",
+            "description": "Execute a shell or PowerShell command on the host laptop. Non-destructive commands run automatically; destructive commands require approval.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "The exact shell or PowerShell command to execute"},
+                    "timeout": {"type": "integer", "description": "Timeout in seconds (default: 30)"}
+                },
+                "required": ["command"]
+            }
+        }
+    },
+    "launch_app": {
+        "function": launch_app,
+        "category": "system",
+        "schema": {
+            "name": "launch_app",
+            "description": "Launch an application, document, folder, or URL on the host desktop (e.g. 'notepad', 'calc', 'code .', 'd:\\Hope').",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target": {"type": "string", "description": "App name, executable path, folder path, or file URL"}
+                },
+                "required": ["target"]
+            }
+        }
+    },
+
+    # Filesystem Explorer tools
+    "list_dir": {
+        "function": list_dir,
+        "category": "filesystem",
+        "schema": {
+            "name": "list_dir",
+            "description": "List files and directories in a local folder with file sizes and modified dates.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Directory path to list (default: current directory '.')"}
+                }
+            }
+        }
+    },
+    "read_file": {
+        "function": read_file,
+        "category": "filesystem",
+        "schema": {
+            "name": "read_file",
+            "description": "Read the text, code, or configuration contents of a local file.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path of the file to read"},
+                    "max_lines": {"type": "integer", "description": "Max lines to return (default: 150)"}
+                },
+                "required": ["path"]
+            }
+        }
+    },
+    "write_file": {
+        "function": write_file,
+        "category": "filesystem",
+        "schema": {
+            "name": "write_file",
+            "description": "Create or overwrite a local file with content.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path of the file to write"},
+                    "content": {"type": "string", "description": "Full text or code content to write"}
+                },
+                "required": ["path", "content"]
+            }
+        }
+    },
+    "search_files": {
+        "function": search_files,
+        "category": "filesystem",
+        "schema": {
+            "name": "search_files",
+            "description": "Search for files on the laptop matching a keyword or pattern (e.g. '*.py', 'test*', 'report').",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Search query or wildcard pattern"},
+                    "root_dir": {"type": "string", "description": "Root directory to begin search (default: '.')"}
+                },
+                "required": ["query"]
+            }
+        }
+    },
+
+    # Desktop & Process tools
+    "list_running_apps": {
+        "function": list_running_apps,
+        "category": "system",
+        "schema": {
+            "name": "list_running_apps",
+            "description": "List active interactive applications and high-RAM processes running on the laptop.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    "kill_process": {
+        "function": kill_process,
+        "category": "system",
+        "schema": {
+            "name": "kill_process",
+            "description": "Terminate a process on the host laptop by process name or PID (protected system processes cannot be terminated).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "target": {"type": "string", "description": "Process name (e.g. 'chrome.exe') or PID (e.g. '1234')"}
+                },
+                "required": ["target"]
+            }
+        }
+    },
+    "capture_screenshot": {
+        "function": capture_screenshot,
+        "category": "system",
+        "schema": {
+            "name": "capture_screenshot",
+            "description": "Capture a screenshot of the laptop's primary desktop screen.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "Filename to save screenshot (default: 'screenshot.png')"}
+                }
+            }
+        }
     }
 }
 
 
 def get_contextual_tools(category: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Return 3 to 6 compact tool schemas tailored for the specific turn context."""
+    """Return compact tool schemas tailored for the turn context, with fallback to general unleashed tools."""
     selected = []
 
     if category == "mail":
@@ -437,7 +577,7 @@ def get_contextual_tools(category: Optional[str] = None) -> List[Dict[str, Any]]
     elif category == "research":
         keys = ["web_search", "fetch_page", "deep_dossier", "tech_radar", "company_brief"]
     elif category == "github":
-        keys = ["gh_issues", "gh_read_file", "web_search"]
+        keys = ["gh_issues", "gh_read_file", "run_command", "web_search"]
     elif category == "sheets":
         keys = ["sheet_append", "web_search"]
     elif category == "memory":
@@ -445,10 +585,12 @@ def get_contextual_tools(category: Optional[str] = None) -> List[Dict[str, Any]]
     elif category == "tasks":
         keys = ["create_task", "list_tasks", "complete_task", "cancel_task"]
     elif category == "system":
-        keys = ["pc_status", "clean_temp", "remember", "recall"]
+        keys = ["pc_status", "run_command", "launch_app", "list_running_apps", "kill_process", "capture_screenshot", "clean_temp"]
+    elif category == "filesystem":
+        keys = ["list_dir", "read_file", "write_file", "search_files", "run_command"]
     else:
-        # Default lightweight general tools
-        keys = ["web_search", "pc_status", "company_brief", "remember", "recall"]
+        # Default unleashed general tools
+        keys = ["web_search", "pc_status", "run_command", "list_dir", "read_file", "launch_app", "remember", "recall"]
 
     for k in keys:
         if k in TOOL_DEFINITIONS:
